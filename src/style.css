@@ -3,10 +3,9 @@ body {
   margin: 0;
   height: 100%;
   background: #000;
-  color: #bcbcbc;
+  color: #8d867a;
   overflow: hidden;
-  font-family: monospace;
-  touch-action: none;
+  font-family: Cinzel, 'Noto Serif TC', serif;
   user-select: none;
   -webkit-user-select: none;
 }
@@ -18,6 +17,7 @@ body {
 }
 
 #screen {
+  position: relative;
   flex: 1;
   min-height: 0;
   display: flex;
@@ -28,8 +28,14 @@ body {
 
 #display {
   display: block;
-  image-rendering: pixelated;
-  image-rendering: crisp-edges;
+}
+
+#ui {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
 }
 
 #bar {
@@ -39,73 +45,14 @@ body {
   gap: 8px;
   padding: 4px 16px;
   font-size: 11px;
-  color: #747474;
   background: #000;
 }
 
 #bar button {
   font: inherit;
-  color: #bcbcbc;
+  color: #c9a55c;
   background: #000;
-  border: 1px solid #747474;
-  padding: 2px 8px;
+  border: 1px solid #6e5a33;
+  padding: 1px 8px;
   cursor: pointer;
-}
-
-#pad {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 28px;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  padding: 0 16px 12px;
-  pointer-events: none;
-}
-
-#pad[hidden] {
-  display: none;
-}
-
-#pad button {
-  pointer-events: auto;
-  font: bold 14px monospace;
-  color: #fcfcfc;
-  background: rgba(0, 0, 0, 0.55);
-  border: 2px solid #bcbcbc;
-  touch-action: none;
-}
-
-#pad .dpad {
-  display: grid;
-  grid-template-columns: 48px 48px 48px;
-  grid-template-rows: 48px 48px 48px;
-}
-
-#pad .dpad .up { grid-column: 2; grid-row: 1; }
-#pad .dpad .left { grid-column: 1; grid-row: 2; }
-#pad .dpad .right { grid-column: 3; grid-row: 2; }
-#pad .dpad .down { grid-column: 2; grid-row: 3; }
-
-#pad .mid {
-  display: flex;
-  gap: 8px;
-}
-
-#pad .mid button {
-  font-size: 10px;
-  padding: 6px 8px;
-}
-
-#pad .ab {
-  display: flex;
-  gap: 12px;
-}
-
-#pad .ab button {
-  width: 60px;
-  height: 60px;
-  border-radius: 0;
-  background: rgba(168, 0, 16, 0.55);
 }

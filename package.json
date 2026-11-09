@@ -2,18 +2,24 @@
   "name": "the-cursed-labyrinth",
   "private": true,
   "version": "1.0.0",
-  "description": "幽燈魔境 THE CURSED LABYRINTH — an original FC-style action RPG for the browser",
+  "description": "幽燈魔境 THE CURSED LABYRINTH — an original PS2-era Japanese dark action RPG for the browser",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "assets": "node scripts/assets/build.mjs"
   },
   "devDependencies": {
+    "@gltf-transform/cli": "4.5.1",
+    "@types/three": "0.187.0",
     "typescript": "^5.9.3",
     "vite": "^8.3.6",
     "vitest": "^5.1.0"
+  },
+  "dependencies": {
+    "three": "0.187.0"
   }
 }

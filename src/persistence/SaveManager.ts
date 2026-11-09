@@ -1,29 +1,33 @@
 import { GameState, newGameState } from '../core/GameState';
+import { Effects, RESOLUTIONS, Resolution } from '../engine/Renderer';
 import { Lang, browserLang } from '../i18n';
 
-const SAVE_KEY = 'yuto-makyo.save.v1';
-const SETTINGS_KEY = 'yuto-makyo.settings.v1';
+const SAVE_KEY = 'yuto-makyo.save.v2';
+/** Saves of the 8-bit edition, which cannot carry over. */
+const OLD_SAVE_KEY = 'yuto-makyo.save.v1';
+const SETTINGS_KEY = 'yuto-makyo.settings.v2';
 
 export interface Settings {
   bgmVolume: number;
   sfxVolume: number;
   muted: boolean;
-  scanlines: 0 | 1 | 2;
-  flicker: boolean;
-  aspect: 0 | 1; // 0 square, 1 = 8:7 NTSC
-  touchPad: boolean;
   lang: Lang;
+  resolution: Resolution;
+  effects: Effects;
+  crt: boolean;
+  /** Labyrinth corner map. */
+  minimap: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
   bgmVolume: 7,
   sfxVolume: 8,
   muted: false,
-  scanlines: 1,
-  flicker: true,
-  aspect: 0,
-  touchPad: false,
   lang: browserLang(),
+  resolution: 'auto',
+  effects: 'high',
+  crt: false,
+  minimap: true,
 };
 
 function storage(): Storage | null {
@@ -37,6 +41,11 @@ function storage(): Storage | null {
 export const SaveManager = {
   hasSave(): boolean {
     return !!storage()?.getItem(SAVE_KEY);
+  },
+
+  /** An 8-bit edition journey is stored, and no journey of this edition yet. */
+  hasOldSave(): boolean {
+    return !!storage()?.getItem(OLD_SAVE_KEY) && !this.hasSave();
   },
 
   save(state: GameState): boolean {
@@ -53,7 +62,7 @@ export const SaveManager = {
       const raw = storage()?.getItem(SAVE_KEY);
       if (!raw) return null;
       const data = JSON.parse(raw) as Partial<GameState>;
-      if (data.version !== 1) return null;
+      if (data.version !== 2) return null;
       // Merge over defaults so older saves missing a field still load.
       const base = newGameState();
       return {
@@ -81,7 +90,10 @@ export const SaveManager = {
   loadSettings(): Settings {
     try {
       const raw = storage()?.getItem(SETTINGS_KEY);
-      return raw ? { ...DEFAULT_SETTINGS, ...(JSON.parse(raw) as Partial<Settings>) } : { ...DEFAULT_SETTINGS };
+      const s: Settings = raw ? { ...DEFAULT_SETTINGS, ...(JSON.parse(raw) as Partial<Settings>) } : { ...DEFAULT_SETTINGS };
+      // the PS2 / HD / native choices of earlier builds
+      if (!RESOLUTIONS.includes(s.resolution)) s.resolution = 'auto';
+      return s;
     } catch {
       return { ...DEFAULT_SETTINGS };
     }

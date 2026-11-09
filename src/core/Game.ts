@@ -1,105 +1,146 @@
 import { AudioEngine } from '../audio/AudioEngine';
 import type { SongName } from '../audio/MusicData';
-import type { SfxName } from '../audio/SoundEffects';
-import { Display } from '../graphics/Display';
-import { INVERT_MAP } from '../graphics/Palette';
-import { PixelRenderer } from '../graphics/PixelRenderer';
-import { KEY_NAMES, isZh, setLang, t } from '../i18n';
+import type { SfxName, SfxOptions } from '../audio/Sfx';
+import * as THREE from 'three';
+import { Assets } from '../engine/Assets';
+import { loadFonts } from '../engine/Fonts';
+import { Interp } from '../engine/Interp';
+import { Renderer, SCREEN_H, VIEW } from '../engine/Renderer';
+import { isZh, setKeyNames, setLang, t } from '../i18n';
 import { SaveManager, Settings } from '../persistence/SaveManager';
-import { DUNGEONS } from '../data/levels/dungeons';
-import { BOSS_ORDER, STAGES, StageId } from '../data/levels/stages';
-import { BossId } from '../world/DungeonMap';
-import { GameLoop } from './GameLoop';
-import { DungeonId, GameState, KeyItemId, Location, newGameState } from './GameState';
-import { InputManager } from './InputManager';
-import { Scene, SceneManager } from './SceneManager';
-import { TitleScene } from '../scenes/TitleScene';
-import { IntroScene } from '../scenes/IntroScene';
-import { WorldScene } from '../scenes/WorldScene';
+import { LoadingScene } from '../scenes/LoadingScene';
+import { BossScene } from '../scenes/BossScene';
 import { DungeonScene } from '../scenes/DungeonScene';
-import { ActionScene } from '../scenes/ActionScene';
-import { GameOverScene } from '../scenes/GameOverScene';
-import { EndingScene } from '../scenes/EndingScene';
-import { CardScene } from '../scenes/CardScene';
+import { IntroScene } from '../scenes/IntroScene';
+import { IsoScene } from '../scenes/IsoScene';
+import { TitleScene } from '../scenes/TitleScene';
 import { PauseMenu } from '../ui/PauseMenu';
-import { Inventory } from '../ui/Inventory';
+import { COL, UI } from '../ui/UI';
+import { CheatCode } from './Cheat';
+import { GameLoop } from './GameLoop';
+import { DUNGEONS } from '../data/levels/dungeons';
 import { WORLD_ENTRANCES } from '../data/levels/world';
+import type { BossId } from '../world/DungeonMap';
+import { DungeonId, GameState, KeyItemId, Location, newGameState } from './GameState';
+import { Device, InputManager, KEY_LABELS } from './InputManager';
+import { SceneManager } from './SceneManager';
 
-export const SEAL_OF_BOSS: Record<BossId, KeyItemId | null> = {
-  rotroot: 'mirror',
-  centipede: 'jewel',
-  gashadokuro: 'flute',
-  meiou: null,
-};
+/** The seal each guardian guards. */
+export const SEAL_OF_BOSS: Record<BossId, KeyItemId | null> = { rotroot: 'mirror', centipede: 'jewel', gashadokuro: 'flute', meiou: null };
 
+/** Top-level game object: owns the renderer, interface, input, audio, scenes and the current journey. */
 export class Game {
-  readonly r: PixelRenderer;
-  readonly display: Display;
-  readonly input = new InputManager();
+  readonly gfx: Renderer;
+  readonly ui: UI;
+  readonly input: InputManager;
   readonly audio = new AudioEngine();
+  readonly assets = new Assets();
   readonly scenes = new SceneManager();
+  private readonly loop: GameLoop;
+  private readonly interp = new Interp();
   state: GameState = newGameState();
   settings: Settings = SaveManager.loadSettings();
   frame = 0;
   continuesLeft = 3;
-  /** World-map spirits defeated since the hero last left the map (they return later). */
-  readonly spiritsBeaten = new Set<string>();
-  private readonly loop: GameLoop;
+  /** Test cheat (↑↑↓↓←→←→BA): every map is shown while it is on. Not saved. */
+  reveal = false;
+  private readonly cheat = new CheatCode();
+  private toast: { text: string; t: number } | null = null;
+  /** Ticks of slow motion left. */
+  private slowFor = 0;
+  private labelledDevice: Device | null = null;
 
-  constructor(canvas: HTMLCanvasElement, host: HTMLElement) {
-    this.display = new Display(canvas, host);
-    this.r = new PixelRenderer(this.display.lowresContext());
+  constructor(display: HTMLCanvasElement, uiCanvas: HTMLCanvasElement, private readonly host: HTMLElement) {
+    this.gfx = new Renderer(display, host);
+    this.assets.anisotropy = Math.min(16, this.gfx.gl.capabilities.getMaxAnisotropy());
+    this.ui = new UI(uiCanvas);
+    this.gfx.onResize = () => this.ui.resize(this.gfx.cssW, this.gfx.cssH);
+    this.ui.resize(this.gfx.cssW, this.gfx.cssH);
+    this.input = new InputManager(host);
+    this.input.toLogical = (cx, cy) => {
+      const r = uiCanvas.getBoundingClientRect();
+      return r.width ? { x: ((cx - r.left) / r.width) * VIEW.w - VIEW.ox, y: ((cy - r.top) / r.height) * SCREEN_H } : null;
+    };
     this.input.onFirstGesture = () => this.audio.unlock();
     this.input.onFullscreenKey = () => this.toggleFullscreen();
+    this.applySettings();
     this.loop = new GameLoop(
       () => this.update(),
-      () => this.render(),
+      (alpha, ms, now) => this.render(alpha, ms, now),
+      () => this.interp.begin(this.moving()),
     );
     window.addEventListener('blur', () => this.autoPause());
-    document.addEventListener('visibilitychange', () => {
-      if (document.hidden) this.autoPause();
-    });
-    this.applySettings();
   }
 
-  start(scene?: Scene): void {
-    this.scenes.change(scene ?? new TitleScene(this), false);
+  async start(): Promise<void> {
     this.loop.start();
+    await loadFonts();
+    this.scenes.change(new LoadingScene(this), false);
   }
 
   private update(): void {
-    this.input.tick();
     this.frame++;
-    const sc = this.scenes;
-    if (!sc.busy && !sc.hasOverlay && sc.current?.pausable) {
-      if (this.input.pressed('start')) {
-        this.input.consume('start');
-        this.openPause();
-      } else if (this.input.pressed('select')) {
-        this.input.consume('select');
-        this.openInventory();
-      }
+    if (this.slowFor > 0 && --this.slowFor === 0) this.loop.scale = 1;
+    this.ui.frame = this.frame;
+    this.input.poll();
+    if (this.input.device !== this.labelledDevice) this.labelPage();
+    const cur = this.scenes.current;
+    for (const tap of this.input.taps) if (this.cheat.feed(tap, this.frame)) this.toggleReveal();
+    if (this.toast && --this.toast.t <= 0) this.toast = null;
+    if (cur?.playTime && !this.scenes.hasOverlay) this.state.stats.frames++;
+    // Esc frees a captured mouse before the page sees the key, so that pauses too
+    if (!this.scenes.busy && cur?.pausable && this.scenes.top === cur && (this.input.pressed('start') || this.input.lockLost)) {
+      this.openPause();
+      this.input.syncLock();
+      return;
     }
-    if (!sc.hasOverlay && sc.current?.playTime) this.state.stats.frames++;
-    sc.update();
+    this.scenes.update();
+    this.input.syncLock();
   }
 
-  private render(): void {
-    this.r.spriteLimit = this.settings.flicker ? 8 : 0;
-    this.scenes.draw(this.r);
-    this.r.present();
-    this.display.present();
+  /** Run the game clock at `scale` for the next `ticks` ticks (by default, after a perfect parry). */
+  slowMo(ticks = 20, scale = 0.4): void {
+    this.slowFor = ticks;
+    this.loop.scale = scale;
+  }
+
+  /** The test cheat: reveal every map and restore life, or put the fog of war back. */
+  private toggleReveal(): void {
+    if (!this.scenes.current?.playTime || this.scenes.hasOverlay) return;
+    this.reveal = !this.reveal;
+    if (this.reveal) this.state.life = this.state.maxLife;
+    this.sfx(this.reveal ? 'heal' : 'cancel');
+    this.toast = { text: this.reveal ? t('CHEAT: MAP REVEALED, LIFE RESTORED') : t('CHEAT OFF: FOG OF WAR RESTORED'), t: 150 };
+  }
+
+  private moving(): readonly THREE.Object3D[] {
+    return this.scenes.current?.moving ?? [];
+  }
+
+  private render(alpha: number, ms: number, now: number): void {
+    const objs = this.moving();
+    this.interp.end(objs);
+    this.interp.apply(objs, alpha);
+    this.scenes.render(this.gfx, this.ui, (this.frame + alpha) / 60);
+    if (this.toast) {
+      const w = this.ui.measure(this.toast.text, 14, 600) + 36, alpha = Math.min(1, this.toast.t / 20);
+      this.ui.ctx.globalAlpha = alpha;
+      this.ui.panel(320 - w / 2, 54, w, 30, COL.red);
+      this.ui.ctx.globalAlpha = 1;
+      this.ui.text(this.toast.text, 320, 75, { size: 14, weight: 600, align: 'center', color: COL.goldLight, alpha });
+    }
+    this.interp.restore(objs);
+    this.gfx.pace(ms, now);
   }
 
   private autoPause(): void {
-    const sc = this.scenes;
-    if (!sc.busy && !sc.hasOverlay && sc.current?.pausable) this.openPause();
+    const cur = this.scenes.current;
+    if (cur?.pausable && !this.scenes.hasOverlay && !this.scenes.busy) this.openPause();
   }
 
   toggleFullscreen(): void {
-    const el = document.getElementById('app')!;
     if (document.fullscreenElement) void document.exitFullscreen();
-    else void el.requestFullscreen?.();
+    else void this.host.requestFullscreen?.().catch(() => undefined);
   }
 
   applySettings(): void {
@@ -108,27 +149,27 @@ export class Game {
     this.audio.sfxVolume = s.sfxVolume;
     this.audio.muted = s.muted;
     this.audio.applyVolumes();
-    this.display.scanlines = s.scanlines;
-    this.display.pixelAspect = s.aspect === 1 ? 8 / 7 : 1;
-    this.display.resize();
-    document.getElementById('pad')?.toggleAttribute('hidden', !s.touchPad);
     setLang(s.lang);
-    this.labelPage();
+    this.gfx.apply(s.resolution, s.effects, s.crt);
     SaveManager.saveSettings(s);
+    this.labelPage();
   }
 
-  /** The HTML around the canvas: key hints, buttons and touch pad use the same key names as the game. */
+  /** Page chrome below the game: key hints in the current language and device. */
   private labelPage(): void {
+    this.labelledDevice = this.input.device;
+    setKeyNames(KEY_LABELS[this.input.device]);
     document.documentElement.lang = isZh() ? 'zh-Hant' : 'en';
-    const set = (sel: string, text: string) => document.querySelectorAll(sel).forEach((el) => (el.textContent = text));
-    set('#hint', t('←↑→↓ MOVE · {A} JUMP / OK · {B} SWORD / CANCEL · ↑+{B} ITEM · {START} PAUSE · {SELECT} ITEMS · F FULLSCREEN'));
-    set('#btn-pad', t('TOUCH PAD'));
-    set('#btn-full', t('FULLSCREEN'));
-    for (const [btn, key] of [['a', 'A'], ['b', 'B'], ['start', 'START'], ['select', 'SELECT']]) set(`#pad [data-btn="${btn}"]`, KEY_NAMES[key]);
+    const hint = document.getElementById('hint');
+    if (hint) {
+      hint.textContent = t(
+        '{MOVE} MOVE · {ATTACK} ATTACK · {STRONG} STRONG · {GUARD} GUARD · {DODGE} DODGE · {ACT} EXAMINE · {ITEM} ITEM · {LOCK} LOCK ON · {MAP} MAP · {START} PAUSE · F FULLSCREEN',
+      );
+    }
   }
 
-  sfx(name: SfxName): void {
-    this.audio.sfxPlay(name);
+  sfx(name: SfxName, opt?: SfxOptions): void {
+    this.audio.sfxPlay(name, opt);
   }
 
   music(name: SongName, onEnd?: () => void): void {
@@ -145,17 +186,6 @@ export class Game {
     this.scenes.push(new PauseMenu(this));
   }
 
-  openInventory(): void {
-    this.sfx('cursor');
-    this.scenes.push(new Inventory(this));
-  }
-
-  encounterFlash(): void {
-    this.scenes.flash(INVERT_MAP, 4);
-  }
-
-  // ---- Flow -------------------------------------------------------------
-
   toTitle(): void {
     this.audio.stopMusic();
     this.scenes.change(new TitleScene(this));
@@ -164,7 +194,6 @@ export class Game {
   newGame(): void {
     this.state = newGameState();
     this.continuesLeft = 3;
-    SaveManager.save(this.state);
     this.scenes.change(new IntroScene(this));
   }
 
@@ -177,12 +206,12 @@ export class Game {
     return true;
   }
 
-  /** Go to a saved location (world map or a labyrinth cell). */
   private resume(loc: Location): void {
     if (loc.mode === 'dungeon') this.scenes.change(new DungeonScene(this, loc.id));
-    else this.toWorld(loc.x, loc.y);
+    else this.toWorld();
   }
 
+  /** Out on the plains, at world tile (x, y) if given; records the journey. */
   toWorld(x?: number, y?: number): void {
     const s = this.state;
     if (x !== undefined && y !== undefined) s.location = { mode: 'world', x, y };
@@ -192,79 +221,58 @@ export class Game {
     }
     s.checkpoint = { ...s.location };
     this.saveGame();
-    this.scenes.change(new WorldScene(this));
+    this.scenes.change(new IsoScene(this, 'world'));
+  }
+
+  /** Into Haiya village from world tile (x, y), where leaving puts the hero back (chapter 1 has one village). */
+  enterTown(x: number, y: number): void {
+    this.state.location = { mode: 'world', x, y };
+    this.scenes.change(new IsoScene(this, 'village'));
+  }
+
+  /** The chapter 1 road to the grotto (walked until it has been cleared once). */
+  startRoad(): void {
+    const back = WORLD_ENTRANCES.d1;
+    this.state.location = { mode: 'world', x: back.x, y: back.y };
+    this.scenes.change(new IsoScene(this, 'road'));
+  }
+
+  stageCleared(): void {
+    this.state.flags['stage:s1'] = true;
+    this.enterDungeon('d1');
   }
 
   enterDungeon(id: DungeonId): void {
-    this.spiritsBeaten.clear();
     const d = DUNGEONS[id];
-    const rows = d.map;
-    let sx = 1, sy = 1;
-    rows.forEach((row, y) => {
+    let x = 1, y = 1;
+    d.map.forEach((row, r) => {
       const i = row.indexOf('@');
-      if (i >= 0) [sx, sy] = [i, y];
+      if (i >= 0) [x, y] = [i, r];
     });
-    this.state.location = { mode: 'dungeon', id, x: sx, y: sy, dir: d.start.dir };
+    this.state.location = { mode: 'dungeon', id, x, y, dir: d.start.dir };
     this.state.checkpoint = { ...this.state.location };
     this.saveGame();
-    this.scenes.change(new CardScene(this, d.name, 'LABYRINTH', () => this.scenes.change(new DungeonScene(this, id))));
+    this.scenes.change(new DungeonScene(this, id));
   }
 
-  /** Back to the labyrinth after a battle, at the same cell and heading. */
-  returnToDungeon(): void {
-    const loc = this.state.location;
-    if (loc.mode !== 'dungeon') return this.toWorld();
-    this.saveGame();
-    this.scenes.change(new DungeonScene(this, loc.id, false));
+  startBoss(id: DungeonId): void {
+    this.scenes.change(new BossScene(this, id));
   }
 
-  startStage(id: StageId): void {
-    this.spiritsBeaten.clear();
-    const st = STAGES[id];
-    this.scenes.change(new CardScene(this, st.title, st.subtitle, () => this.scenes.change(new ActionScene(this, { kind: 'stage', stage: id }))));
-  }
-
-  startEncounter(group: string, cell: string): void {
-    this.scenes.change(new ActionScene(this, { kind: 'encounter', group, cell }), true);
-  }
-
-  startBoss(boss: BossId): void {
-    this.scenes.change(new ActionScene(this, { kind: 'boss', boss }));
-  }
-
-  stageCleared(id: StageId): void {
-    this.state.flags[`stage:${id}`] = true;
-    const st = STAGES[id];
-    if (st.leadsTo.kind === 'dungeon') this.enterDungeon(st.leadsTo.id);
-    else this.startBoss(st.leadsTo.boss);
+  /** Out through the exit stairs, back to the entrance on the world map. */
+  leaveDungeon(id: DungeonId): void {
+    const back = WORLD_ENTRANCES[id];
+    this.toWorld(back.x, back.y);
   }
 
   bossDefeated(boss: BossId): void {
     const s = this.state;
     s.flags[`boss:${boss}`] = true;
-    if (boss === 'meiou') {
-      s.cleared = true;
-      this.saveGame();
-      this.scenes.change(new EndingScene(this));
-      return;
-    }
     const seal = SEAL_OF_BOSS[boss];
-    if (seal && !s.keyItems.includes(seal)) {
-      s.keyItems.push(seal);
-      if (seal === 'jewel') {
-        s.maxLife = Math.min(24, s.maxLife + 4);
-      }
-    }
+    if (seal && !s.keyItems.includes(seal)) s.keyItems.push(seal);
     s.life = s.maxLife;
-    const idx = BOSS_ORDER.indexOf(boss);
-    const dungeon = (['d1', 'd2', 'd3'] as DungeonId[])[idx];
-    const back = WORLD_ENTRANCES[dungeon];
-    this.toWorld(back.x, back.y);
-  }
-
-  gameOver(): void {
-    this.state.stats.deaths++;
-    this.scenes.change(new GameOverScene(this), false);
+    const id = (Object.keys(DUNGEONS) as DungeonId[]).find((k) => DUNGEONS[k].boss === boss) ?? 'd1';
+    this.leaveDungeon(id);
   }
 
   /** CONTINUE after death: full life, half gold, back to the last checkpoint. */

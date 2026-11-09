@@ -1,242 +1,328 @@
-import { SongSource } from './MusicSequencer';
+import type { SongDef } from './MusicPlayer';
 
-// All melodies are original compositions for this game. The action themes lean
-// on D minor with a flat-2nd / Phrygian-dominant colour; the labyrinths use the
-// miyako-bushi scale (E F A B C) for a yokai feel. Every bar starts with '|',
-// and tests check that each bar line lands on a whole 4/4 bar.
+// All melodies are original compositions for this game. Harmony leans on D minor
+// with a flat-2nd (Phrygian) colour; melodies use the miyako-bushi scale
+// (D Eb G A Bb) for the yokai feel. The flute plays with scoops and vibrato in
+// the manner of a shakuhachi; the koto part is played on a Vietnamese dan tranh.
+// Every bar starts with '|', and tests check that bar lines fall on whole bars.
+
+// ---------------------------------------------------------------- helpers
 
 const NAMES = ['c', 'c+', 'd', 'e-', 'e', 'f', 'f+', 'g', 'a-', 'a', 'b-', 'b'];
-const PC: Record<string, number> = {
-  c: 0, 'c+': 1, 'd-': 1, d: 2, 'd+': 3, 'e-': 3, e: 4, f: 5, 'f+': 6, g: 7, 'g+': 8, 'a-': 8, a: 9, 'a+': 10, 'b-': 10, b: 11,
+/** Absolute pitch: 62 -> 'o4d'. */
+const abs = (m: number) => `o${Math.floor(m / 12) - 1}${NAMES[m % 12]}`;
+const LEN: Record<number, string> = { 4: '1', 3: '2.', 2: '2', 1.5: '4.', 1: '4', 0.75: '8.', 0.5: '8', 0.25: '16' };
+const len = (beats: number) => {
+  const l = LEN[beats];
+  if (!l) throw new Error(`no MML length for ${beats} beats`);
+  return l;
 };
+const note = (m: number, beats: number) => `${abs(m)}${len(beats)} `;
+const chord = (ms: number[], beats: number) => `{${ms.map(abs).join(' ')}}${len(beats)} `;
 
-/** One note with an absolute octave: n(38, 8) -> 'o2 d8 '. */
-const n = (m: number, len: string | number) => `o${Math.floor(m / 12) - 1} ${NAMES[m % 12]}${len} `;
-/** Bass roots sit in the triangle's sweet spot, G1..F#2. */
-const low = (name: string) => (PC[name] >= 7 ? 24 : 36) + PC[name];
-const times = (k: number, s: string) => s.repeat(k);
+const ROOT: Record<string, number> = { C: 0, 'C#': 1, Db: 1, D: 2, 'D#': 3, Eb: 3, E: 4, F: 5, 'F#': 6, G: 7, 'G#': 8, Ab: 8, A: 9, Bb: 10, B: 11 };
+const QUALITY: Record<string, number[]> = { '': [0, 4, 7], m: [0, 3, 7], '5': [0, 7], sus4: [0, 5, 7], '7': [0, 4, 7, 10], m7: [0, 3, 7, 10] };
 
-/** Bars of chord roots ('d b-/c a'); a slash splits a bar in two halves. */
-function bassline(chords: string, pattern: (root: number, beats: number) => string): string {
+function parseChord(name: string): { root: number; pcs: number[] } {
+  const m = /^([A-G][#b]?)(.*)$/.exec(name);
+  const root = m ? ROOT[m[1]] : undefined;
+  const q = m ? QUALITY[m[2]] : undefined;
+  if (root === undefined || !q) throw new Error(`unknown chord ${name}`);
+  return { root, pcs: q.map((i) => (root + i) % 12) };
+}
+
+/** `count` chord tones from `low` upward. */
+function tones(name: string, low: number, count: number): number[] {
+  const { pcs } = parseChord(name);
+  const out: number[] = [];
+  for (let m = low; out.length < count; m++) if (pcs.includes(m % 12)) out.push(m);
+  return out;
+}
+
+/** The chord's root in [low, low + 11]. */
+const root = (name: string, low: number) => low + ((((parseChord(name).root - low) % 12) + 12) % 12);
+
+type Voicing = (chord: string, beats: number) => string;
+
+/** One bar per chord; 'A/B' splits a bar in halves, '-' is a silent bar. */
+function bars(chords: string, voicing: Voicing): string {
   return chords
     .trim()
     .split(/\s+/)
     .map((bar) => {
       const parts = bar.split('/');
-      return '| ' + parts.map((c) => pattern(low(c), 4 / parts.length)).join('');
+      const beats = 4 / parts.length;
+      return '| ' + parts.map((c) => (c === '-' ? `r${len(beats)} ` : voicing(c, beats))).join('');
     })
     .join('');
 }
 
-// bass patterns
-const octaves = (r: number, beats: number) => times(beats, n(r, 8) + n(r + 12, 8));
-const gallop = (r: number, beats: number) => times(beats, n(r, 8) + n(r, 16) + n(r + 12, 16));
-const riff = (r: number) => times(2, n(r, 8) + n(r, 16) + n(r, 16)) + n(r + 1, 8) + n(r, 16) + n(r, 16) + n(r - 1, 8) + n(r + 12, 8);
-const creep = (r: number) => [0, 0, 7, 0, 8, 0, 7, 0].map((k) => n(r + k, 8)).join('');
-const march = (r: number) => n(r, '4.') + n(r, 8) + n(r, 4) + n(r + 7, 4);
-const stately = (r: number) => n(r, 2) + n(r + 7, 4) + n(r + 12, 4);
+const rests = (n: number) => '| r1 '.repeat(n);
 
-/** Accompaniment figures over 4-note voicings (MIDI numbers, low to high). */
-const arp16 = (...bars: number[][]) => bars.map((v) => '| ' + times(4, v.map((m) => n(m, 16)).join(''))).join('');
-const harp8 = (...bars: number[][]) => bars.map((v) => '| ' + [0, 1, 2, 3, 2, 1, 0, 1].map((i) => n(v[i], 8)).join('')).join('');
+// voicings
+const pad = (low: number, count: number): Voicing => (c, b) => chord(tones(c, low, count), b);
+const fifth = (low: number): Voicing => (c, b) => chord([root(c, low), root(c, low) + 7], b);
+const bass = (low: number): Voicing => (c, b) => note(root(c, low), b);
+const arp = (low: number, count: number, order: number[], step = 0.5): Voicing => (c, b) => {
+  const t = tones(c, low, count);
+  let s = '';
+  for (let i = 0; i < b / step; i++) s += note(t[order[i % order.length]], step);
+  return s;
+};
+const walk = (low: number): Voicing => (c, b) => {
+  const r = root(c, low);
+  return [r, r + 7, r + 12, r + 7].slice(0, b).map((m) => note(m, 1)).join('');
+};
+/** Eighth-note ostinato from offsets above the chord root. */
+const ostinato = (low: number, offsets: number[]): Voicing => (c, b) => {
+  const r = root(c, low);
+  let s = '';
+  for (let i = 0; i < b * 2; i++) s += note(r + offsets[i % offsets.length], 0.5);
+  return s;
+};
 
-// ---------------------------------------------------------------- BATTLE
-// Side-scrolling stages and ambushes: the hot-blooded main theme.
+/** Drum letters for every song (no MML command letters). */
+const KIT: Record<string, string> = {
+  T: 'taiko_ff', t: 'taiko_f', k: 'taiko_mf', z: 'taiko_pp', U: 'taiko_stick', u: 'taiko_stick_soft', R: 'taiko_rim',
+  B: 'bdrum_ff', J: 'frame_lo', H: 'frame_hi', Y: 'timp_roll_lo', W: 'timp_roll_hi',
+  G: 'gong_ff', h: 'gong_mp', X: 'gong_roll', Q: 'gong_scrape', S: 'cym_swell', s: 'cym_soft', C: 'crash',
+  w: 'woodblock', x: 'clapper', i: 'rin', Z: 'bowl', N: 'log_lo', n: 'log_hi',
+};
 
-const BATTLE_A7 =
-  '| o5 d4 o4 a8 o5 d8 f8 g8 a4 | b-8 a8 g8 f8 g4 e4 | f4. e8 d4 c8 d8 | e2 c+4 o4 a4 ' +
-  '| o5 d4 o4 a8 o5 d8 f8 g8 a4 | b-8 a8 g8 a8 o6 c4 o5 b-8 a8 | g8 f8 e8 f8 g4 c+4 ';
-const BATTLE_B =
-  '| o5 f4. g8 f8 d8 o4 b-4 | o5 c8 d8 e8 g8 e4 c4 | d4. f8 a4 g8 f8 | a2 r8 a8 b-8 o6 c8 ' +
-  '| o5 b-4. g8 e-4 g8 b-8 | o6 c4. o5 b-8 g4 e-4 | o4 a8 b-8 o5 c+8 d8 e8 f8 g8 b-8 | a2 e4 c+4 ';
-const BATTLE_DRUM_A = '| x8 h8 s8 h8 k8 k8 s8 h8 ' + times(6, '| k8 h8 s8 h8 k8 k8 s8 h8 ') + '| k8 h8 s8 h8 s16 s16 s16 s16 s8 s8 ';
-const BATTLE_DRUM_B =
-  '| x8 s8 k8 s8 k8 s8 k16 k16 s8 ' + times(6, '| k8 s8 k8 s8 k8 s8 k16 k16 s8 ') + '| s16 s16 s16 s16 s16 s16 s16 s16 s8 s8 s8 s8 ';
+// stage positions: violins left, celli right, horns centre-left, koto left, harp right
+const P = { vln: -0.38, vla: 0.12, vc: 0.32, cb: 0.42, hn: -0.16, tbn: 0.2, fl: 0.08, koto: -0.28, harp: 0.3, bell: 0.25 };
 
-const BATTLE: SongSource = {
-  tempo: 160,
+// ---------------------------------------------------------------- TITLE
+// Lantern-lit main theme: shakuhachi over koto and strings, then the full
+// orchestra with taiko.
+
+const TITLE_A = 'Dm Dm Bb Dm Gm Eb Gm A';
+const TITLE_B = 'Bb Dm Eb Dm Gm Eb Bb/A Dm';
+const TITLE_MELODY_B = '| o5 d2 e-4 g4 | a1 | b-4 a4 g4 e-4 | d1 | g2 a4 b-4 | a2 g4 e-4 | d4 e-4 g4 a4 | d1 ';
+
+const TITLE: SongDef = {
+  tempo: 66,
   loop: true,
-  reverb: 0.18,
-  echo: { delay: 12, vol: 0.3 },
-  sq1:
-    '@2 v12 E3 S8 q7 y12 D8 | o5 d16 d16 r8 d16 d16 r8 d8 r8 c8 d8 | e-4 d4 c+4 o4 a4 L ' +
-    BATTLE_A7 + '| o5 d2. r4 ' + BATTLE_A7 + '| o5 d4 f8 a8 o6 d4 r4 ' + BATTLE_B,
-  sq2:
-    '@1 v7 E3 S5 q7 y8 | o4 d16 d16 r8 d16 d16 r8 d8 r8 c8 d8 | e-4 d4 c+4 o3 a4 L ' +
-    'v6 E4 S5 q8 | o4 f1 | f2 e2 | d1 | c+1 | a1 | b-2 o5 c2 | o4 b-2 a2 | a1 ' +
-    'v8 E3 S6 q7 | o4 a4 f8 a8 o5 d8 e8 f4 | g8 f8 e8 d8 e4 c4 | d4. c8 o4 b-4 a8 b-8 | o5 c+2 o4 a4 e4 ' +
-    '| o4 a4 f8 a8 o5 d8 e8 f4 | g8 f8 e8 f8 a4 g8 f8 | d8 d8 c+8 d8 e4 o4 a4 | o4 a4 o5 d8 f8 a4 r4 ' +
-    'v6 E4 S5 q8 | o4 d2 f2 | e2 g2 | f1 | f2 a2 | g1 | g2 b-2 | c+1 | e2 c+2 ',
-  tri:
-    'q7 | o2 d8 r8 d8 r8 d8 r8 c8 d8 | e-4 d4 c+4 o1 a4 L ' +
-    bassline('d b-/c b- a d b-/c g/a d', octaves) +
-    bassline('d b-/c b- a d b-/c g/a d', octaves) +
-    bassline('b- c d d e- e- a a', gallop),
-  noise:
-    'v13 | k8 r8 k8 r8 k8 r8 s8 s8 | s16 s16 s16 s16 s8 s8 s16 s16 s16 s16 s8 s8 L ' + BATTLE_DRUM_A + BATTLE_DRUM_A + BATTLE_DRUM_B,
+  reverb: 0.5,
+  kit: KIT,
+  tracks: [
+    {
+      inst: 'fl_sus', vol: 1.2, pan: P.fl, rev: 0.6,
+      mml: 'y14 P35 v11 | r1 | r1 L' +
+        '| o4 a2 b-8 a8 g4 | a1 | o5 d4. e-8 d4 o4 b-4 | a1 | g4. a8 b-4 a4 | g4 e-4 d2 | e-4 g4 a4 b-4 | a1 ' +
+        '| r1 | r1 | r1 | r1 | v9 o5 g2 a4 b-4 | a2 g4 e-4 | d4 e-4 g4 a4 | d1 ',
+    },
+    {
+      inst: 'hn_sus', vol: 0.65, pan: P.hn, rev: 0.6,
+      mml: '| r1 | r1 L' + rests(4) + '| v7 o4 d1 | e-1 | d1 | c+1 ' + 'v12 ' + TITLE_MELODY_B.replace(/o5/g, 'o4'),
+    },
+    { inst: 'vln_sus', vol: 0.8, pan: P.vln, mml: '| r1 | r1 L v6 ' + bars(TITLE_A, pad(69, 2)) + 'v12 ' + TITLE_MELODY_B },
+    { inst: 'vla_sus', vol: 0.35, pan: P.vla, mml: '| r1 | r1 L v7 ' + bars(TITLE_A, pad(57, 2)) + 'v9 ' + bars(TITLE_B, pad(57, 3)) },
+    { inst: 'vc_sus', vol: 0.9, pan: P.vc, mml: 'v7 | o2 d1 | ^1 L v8 ' + bars(TITLE_A, fifth(38)) + 'v10 ' + bars(TITLE_B, fifth(38)) },
+    { inst: 'cb_sus', vol: 0.5, pan: P.cb, mml: 'v8 | o1 d1 | ^1 L v9 ' + bars(`${TITLE_A} ${TITLE_B}`, bass(31)) },
+    {
+      inst: 'koto', vol: 0.5, pan: P.koto, rev: 0.45,
+      mml: '| r1 | v10 o5 d8 o4 a8 b-8 a8 g8 e-8 d4 L v9 ' + bars(TITLE_A, arp(50, 5, [0, 2, 3, 4, 3, 2, 1, 2])) + 'v11 ' + bars(TITLE_B, arp(50, 5, [0, 2, 3, 4, 3, 2, 1, 2])),
+    },
+    { inst: 'chimes', vol: 0.9, pan: P.bell, rev: 0.8, mml: '| r1 | r1 L v8 | o5 d1 | r1 | r1 | r1 | d1 | r1 | r1 | r1 ' + rests(8) },
+    {
+      inst: '', vol: 0.75, rev: 0.35,
+      mml: '| r1 | r1 L v9 [| z2 r2 ]7 | z4 z4 r2 v13 [| T4 r8 t8 T4 t8 t8 ]7 | T8 t8 t8 t8 T8 t8 T4 ',
+    },
+    { inst: '', vol: 0.55, rev: 0.5, mml: 'v11 | X1 | r2 S2 L | G1 | r1 | r1 | r1 | h1 | r1 | r1 | r2 S2 | G1 | r1 | r1 | r1 | s1 | r1 | r1 | r2 S2 ' },
+  ],
 };
 
 // ---------------------------------------------------------------- WORLD
-// The overland march: wide leaps, A minor with a yo-scale colour.
+// The lonely road between villages: koto ostinato, pizzicato walk, flute song.
 
-const WORLD_A =
-  '| o4 a4. o5 e8 a4 g8 e8 | d4. e8 g4 d4 | c4. d8 f4 a4 | g+4. f8 e2 ' +
-  '| o4 a4. o5 e8 a4 g8 e8 | d4. e8 g4 b4 | a4 g8 f8 g4 d4 | e8 g8 a2. ';
-const WORLD_DRUM_A = '| x8 h8 s8 h8 k8 h8 s8 h8 ' + times(6, '| k8 h8 s8 h8 k8 k8 s8 h8 ') + '| k8 h8 s8 h8 s16 s16 s8 s16 s16 s8 ';
+const WORLD_A = 'Am Am F G Am Am Dm E';
+const WORLD_B = 'F G Am Am Dm Bb E E';
+const WORLD_MELODY_B = '| o5 c2 f4 a4 | g2. d4 | e4 a4 g4 e4 | a2 g4 e4 | f2 a4 o6 d4 | d2 o5 b-4 a4 | g+2 b4 o6 d4 | o5 e1 ';
+const HAND_DRUMS = '| J8 w8 H8 w8 J8 J8 H8 w8 ';
 
-const WORLD: SongSource = {
-  tempo: 132,
+const WORLD: SongDef = {
+  tempo: 92,
   loop: true,
-  reverb: 0.2,
-  echo: { delay: 12, vol: 0.3 },
-  sq1:
-    '@2 v11 E3 S8 q7 y10 D8 ' + WORLD_A + WORLD_A +
-    '| o5 c4 f4 a4. g8 | b4 g4 d4. e8 | e4 g4 b4. a8 | a2 e2 | f4. e8 d4 f4 | g4. a8 b4 o6 d4 | e4. d8 c4 o5 b4 | g+4 a4 b2 ',
-  sq2:
-    '@2 v7 E2 S0 q4 ' +
-    '| r8 o4 e8 r8 c8 r8 e8 r8 c8 | r8 o4 d8 r8 o3 b8 r8 o4 d8 r8 o3 b8 | r8 o4 c8 r8 o3 a8 r8 o4 c8 r8 o3 a8 | r8 o4 e8 r8 o3 g+8 r8 o4 e8 r8 o3 g+8 ' +
-    '| r8 o4 e8 r8 c8 r8 e8 r8 c8 | r8 o4 d8 r8 o3 b8 r8 o4 d8 r8 o3 b8 | r8 o4 c8 r8 o3 a8 r8 o4 d8 r8 o3 b8 | r8 o4 e8 r8 c8 r8 e8 r8 c8 ' +
-    '@1 v8 E3 S6 q7 | o4 e4. o5 c8 e4 e8 c8 | o4 b4. o5 c8 d4 o4 b4 | o4 a4. b8 o5 c4 f4 | o5 e4. d8 o4 g+2 ' +
-    '| o4 e4. o5 c8 e4 e8 c8 | o4 b4. o5 c8 d4 g4 | o5 f4 e8 d8 d4 o4 b4 | o5 c8 e8 e2. ' +
-    'v6 E4 S5 q8 y8 | o4 a1 | b1 | g1 | e1 | a1 | g2 b2 | g+1 | g+2 b2 ',
-  tri: 'q7 ' + bassline('a g f e a g f/g a', octaves) + bassline('a g f e a g f/g a', octaves) + bassline('f g e a d g e e', octaves),
-  noise:
-    'v12 ' + WORLD_DRUM_A + WORLD_DRUM_A +
-    '| x8 h8 s8 h8 k8 h8 s8 h8 ' + times(5, '| k8 h8 s8 h8 k8 h8 s8 h8 ') + '| k8 h8 s8 h8 k8 k8 s8 s8 ' +
-    '| s16 s16 s16 s16 s8 s8 s16 s16 s16 s16 s8 s8 ',
+  reverb: 0.35,
+  kit: KIT,
+  tracks: [
+    {
+      inst: 'fl_sus', vol: 1.1, pan: P.fl, rev: 0.55,
+      mml: 'y12 P30 v11 | r1 L' +
+        '| o5 e2 d8 c8 d4 | o4 a2. r4 | o5 c4 d4 e4 f4 | g2 f8 e8 d4 | e4. c8 o4 a2 | g4 a4 o5 c4 d4 | f2 e4 d4 | e1 ' +
+        'v8 | o5 a1 | b1 | o6 c1 | o5 a1 | a1 | b-1 | b1 | g+1 ',
+    },
+    { inst: 'vln_sus', vol: 0.55, pan: P.vln, mml: '| r1 L v6 ' + bars(WORLD_A, pad(64, 2)) + 'v12 ' + WORLD_MELODY_B },
+    {
+      inst: 'hn_sus', vol: 0.55, pan: P.hn, rev: 0.55,
+      mml: '| r1 L' + rests(4) + '| v8 o4 c1 | e1 | f1 | g+1 v10 ' + WORLD_MELODY_B.replace(/o5/g, 'o4').replace(/o6/g, 'o5'),
+    },
+    { inst: 'vla_sus', vol: 0.35, pan: P.vla, mml: '| r1 L v7 ' + bars(WORLD_A, pad(57, 2)) + 'v9 ' + bars(WORLD_B, pad(57, 2)) },
+    { inst: 'vc_pizz', vol: 0.7, pan: P.vc, rev: 0.3, mml: '| r1 L v10 ' + bars(`${WORLD_A} ${WORLD_B}`, walk(40)) },
+    { inst: 'cb_sus', vol: 0.4, pan: P.cb, mml: '| r1 L v7 ' + bars(`${WORLD_A} ${WORLD_B}`, bass(33)) },
+    {
+      inst: 'koto', vol: 0.5, pan: P.koto, rev: 0.4,
+      mml: 'v10 | o3 a8 o4 e8 a8 b8 o5 c8 o4 b8 a8 e8 L v9 ' + bars(WORLD_A, arp(57, 5, [0, 1, 2, 3, 4, 3, 2, 1])) + 'v10 ' + bars(WORLD_B, arp(57, 5, [0, 1, 2, 3, 4, 3, 2, 1])),
+    },
+    { inst: '', vol: 0.55, rev: 0.3, mml: '| r1 L v9 ' + HAND_DRUMS.repeat(15) + '| J8 H8 J8 H8 J16 J16 H16 H16 J8 H8 ' },
+    { inst: '', vol: 1.0, rev: 0.35, mml: '| r1 L' + rests(8) + 'v10 [| z4 r4 z4 r8 z8 ]8' },
+  ],
 };
 
 // ---------------------------------------------------------------- DUNGEON
-// The labyrinths: a breathy miyako-bushi flute over a creeping bass.
+// The labyrinths: drones, tremolo, glass and bowed psaltery, a koto that
+// answers from the dark.
 
-const DUNGEON: SongSource = {
-  tempo: 116,
+const DUNGEON_CHORDS = 'E5 E5 F5 F5 E5 E5 Am Am F F E5 E5 Dm Dm F/E5 E5';
+
+const DUNGEON: SongDef = {
+  tempo: 60,
   loop: true,
-  reverb: 0.38,
-  echo: { delay: 18, vol: 0.4 },
-  sq1:
-    '@2 v10 E6 S7 q8 y16 D6 ' +
-    '| o5 e4. f8 e4 c4 | o4 b2. r4 | a4. b8 o5 c4 e4 | f2 e2 | e4. f8 a4 f4 | e2 c4 o4 b8 o5 c8 | o4 b4 a4 f4 a4 | e1 ' +
-    '| o5 a4 b4 o6 c4 o5 b8 a8 | b2 a4 e4 | f4 a4 o6 c4 o5 a8 f8 | e2. r4 | d4 f4 a4 f8 d8 | e2 f4 g+4 | a4 g+8 f8 e4 c4 | o4 b1 ',
-  sq2:
-    '@1 v5 E8 S4 q8 y10 ' +
-    '| o4 b1 | b1 | e1 | b1 | e1 | e1 | d1 | o3 b1 ' +
-    '| o4 e1 | e1 | c1 | c1 | d1 | o3 g+1 | o4 c1 | o3 b1 ',
-  tri: 'q6 ' + bassline('e e a e a a d e a a f f d e f e', creep),
-  noise: 'v11 ' + times(8, '| t8 r8 r8 t8 r4 w8 w16 w16 ') + '| x8 h8 h8 t8 r8 h8 w8 h8 ' + times(7, '| t8 h8 h8 t8 r8 h8 w8 h8 '),
+  reverb: 0.7,
+  kit: KIT,
+  tracks: [
+    { inst: 'cb_sus', vol: 0.55, pan: P.cb, mml: 'v7 ' + bars(DUNGEON_CHORDS, bass(28)) },
+    { inst: 'vc_trem', vol: 0.45, pan: P.vc, mml: 'v6 ' + bars(DUNGEON_CHORDS, fifth(40)) },
+    { inst: 'glass', vol: 0.4, pan: -0.3, rev: 0.8, mml: 'v7 | r1 | r1 | o5 b1 | ^1 | r1 | r1 | o6 c1 | ^2 r2 | r1 | r1 | o5 a1 | ^1 | r1 | r1 | f1 | e1 ' },
+    { inst: 'psaltery', vol: 0.4, pan: 0.35, rev: 0.75, mml: 'v6 ' + rests(4) + '| o5 b1 | o6 c1 | o5 a1 | b1 ' + rests(4) + '| o5 a1 | f1 | a2 g+2 | g+1 ' },
+    {
+      inst: 'koto', vol: 0.8, pan: P.koto, rev: 0.6,
+      mml: 'v8 | r1 | r2 o4 e8 f8 a4 | r1 | r2 b8 a8 f4 | r1 | r2 o5 c8 o4 b8 a4 | r1 | r2 f8 e8 e4 ' +
+        '| r1 | v10 r4 o5 c8 o4 b8 a8 f8 e4 | r1 | v8 r2 o4 b8 o5 c8 o4 b4 | r1 | r2 a8 f8 e4 | r1 | r2 e8 f8 e4 ',
+    },
+    {
+      inst: '', vol: 0.8, rev: 0.6,
+      mml: 'v9 | N2 r4 n4 | r1 | N2 r4 n4 | r2 n4 n4 | N2 r4 n4 | r1 | N2 r4 n4 | v7 Y1 v9 | N2 r4 n4 | r1 | N2 r4 n4 | r2 n4 n4 | N2 r4 n4 | r1 | N2 n4 n4 | v7 Y1 ',
+    },
+    { inst: '', vol: 0.7, rev: 0.7, mml: 'v8 | h1 | r1 | r1 | r2 S2 | r1 | r1 | r1 | r1 | h1 | r1 | r1 | r2 S2 | r1 | r1 | r1 | Q1 ' },
+    { inst: 'chimes', vol: 1.0, pan: P.bell, rev: 0.9, mml: 'v8 | o4 e1 ' + rests(7) + '| e1 ' + rests(7) },
+    { inst: 'vln_trem', vol: 0.5, pan: P.vln, rev: 0.7, mml: rests(12) + 'v6 | o5 b1 | ^1 | a1 | g+1 ' },
+  ],
+};
+
+// ---------------------------------------------------------------- BATTLE
+// Swords drawn: spiccato strings, taiko, horns.
+
+const BATTLE_A = 'Dm Dm Eb Dm Dm Dm Bb A';
+const BATTLE_B = 'Gm Gm Dm Dm Eb Eb A A';
+const BATTLE_ALL = `${BATTLE_A} ${BATTLE_B}`;
+const BATTLE_MELODY_A = '| o4 d4 a4 o5 d4. e-8 | d4 c4 o4 a2 | b-4 o5 c4 d4 e-4 | d2. r4 | f4. e-8 d4 c4 | d4 o4 a4 f4 a4 | b-4. a8 g4 f4 | a2 o5 c+4 e4 ';
+const TAIKO_FILL = '| T16 t16 t16 t16 T16 t16 t16 t16 ';
+
+const BATTLE: SongDef = {
+  tempo: 150,
+  loop: true,
+  reverb: 0.3,
+  kit: KIT,
+  tracks: [
+    { inst: 'hn_sus', vol: 0.7, pan: P.hn, rev: 0.45, mml: '| r1 L v12 ' + BATTLE_MELODY_A + 'v9 ' + bars(BATTLE_B, pad(55, 2)) },
+    {
+      inst: 'vln_sus', vol: 1.0, pan: P.vln,
+      mml: '| r1 L' + rests(8) + 'v12 | o5 g2 b-4 a4 | g4 f4 d2 | f2 a4 o6 d4 | c4 o5 a4 f2 | g2 b-4 o6 e-4 | d4 c4 o5 b-2 | a2 g4 f4 | e2 c+2 ',
+    },
+    { inst: 'vln_spic', vol: 0.5, pan: -0.2, rev: 0.25, mml: '| r1 L v10 ' + bars(BATTLE_ALL, arp(62, 3, [0, 1, 2, 1, 0, 1, 2, 1])) },
+    { inst: 'vc_spic', vol: 0.6, pan: P.vc, rev: 0.25, mml: 'v12 | o2 d2 d2 L v11 ' + bars(BATTLE_ALL, ostinato(38, [0, 0, 12, 0, 7, 0, 12, 7])) },
+    { inst: 'cb_sus', vol: 0.5, pan: P.cb, mml: 'v10 | o1 d1 L v9 ' + bars(BATTLE_ALL, bass(31)) },
+    { inst: 'tbn_sus', vol: 0.55, pan: P.tbn, rev: 0.4, mml: '| r1 L' + rests(7) + 'v10 | {o2 a o3 e}1 ' + bars(BATTLE_B, fifth(43)) },
+    {
+      inst: 'fl_sus', vol: 0.8, pan: P.fl, rev: 0.4,
+      mml: 'y10 v10 | r1 L' + rests(4) + '| o6 f4. e-8 d4 c4 | d4 o5 a4 f4 a4 | b-4. a8 g4 f4 | a2 o6 c+4 e4 ' + rests(8),
+    },
+    { inst: 'koto', vol: 0.55, pan: P.koto, rev: 0.3, mml: '| r1 L' + rests(8) + 'v10 ' + bars(BATTLE_B, arp(62, 4, [0, 1, 2, 3, 2, 1, 2, 3], 0.25)) },
+    {
+      inst: '', vol: 0.6, rev: 0.3,
+      mml: 'v13 | T8 T8 t8 t8 T4 T4 L [| T8 t8 r8 t8 T8 t8 t8 t8 ]7' + TAIKO_FILL + 'T8 T8 T8 T8 [| T8 r8 U8 t8 T8 R8 U8 t8 ]7' + TAIKO_FILL + 'T8 T8 R8 R8 ',
+    },
+    { inst: '', vol: 0.5, rev: 0.4, mml: 'v11 | r2 S2 L | C1 ' + rests(6) + '| r2 S2 | G1 | r1 | r1 | r1 | C1 | r1 | r1 | r2 S2 ' },
+  ],
 };
 
 // ---------------------------------------------------------------- BOSS
-// C minor, galloping chromatic bass, diminished climbs.
+// A demon wakes: low brass in E Phrygian dominant, taiko and bells.
 
-const CM = [60, 63, 67, 72], DB = [61, 65, 68, 73], AB = [56, 60, 63, 68], BB = [58, 62, 65, 70], G7 = [55, 59, 62, 65], FM = [60, 65, 68, 72];
-const BOSS_DRUMS =
-  '| x8 s8 k8 s8 k8 s8 k16 k16 s8 ' + times(6, '| k8 s8 k8 s8 k8 s8 k16 k16 s8 ') + '| s16 s16 s16 s16 s8 s8 s16 s16 s16 s16 s8 s8 ';
+const BOSS_A = 'E5 E5 F F E5 E5 Dm E';
+const BOSS_B = 'Am Am F F Dm Dm E E';
+const BOSS_MELODY = '| o3 e2 f4 g+4 | a4 g+4 f4 e4 | f2 a4 o4 c4 | o3 b2 a2 | e2 g+4 b4 | o4 c4 o3 b4 a4 g+4 | a2 f4 d4 | e1 ';
 
-const BOSS: SongSource = {
-  tempo: 168,
+const BOSS: SongDef = {
+  tempo: 128,
   loop: true,
-  reverb: 0.14,
-  echo: { delay: 6, vol: 0.25 },
-  sq1:
-    '@1 v14 E2 S11 q7 y10 D10 ' +
-    '| o5 c8 c8 o4 g8 o5 c8 e-8 d8 c8 o4 g8 | o5 e-4 f4 g4. e-8 | f8 e-8 d-8 c8 d-4 f4 | e-4. d-8 c2 ' +
-    '| a-8 g8 a-8 o6 c8 e-4 c4 | d4 o5 b-8 a-8 b-4 f4 | g4 a-8 g8 f8 e-8 d8 o4 b8 | o5 d4 f4 a-4 b4 ' +
-    '| o5 f4. a-8 o6 c4 o5 a-4 | g8 a-8 g8 f8 e-4 c4 | g4. o6 c8 e-4 d4 | c2 o5 g4 e-4 ' +
-    '| f4. a-8 o6 d-4 c4 | o5 a-8 b-8 a-8 g8 f4 a-4 | g8 a-8 b8 o6 c8 d8 e-8 f8 g8 | g2 d4 o5 b4 ',
-  sq2: '@0 v5 E2 S2 q6 ' + arp16(CM, CM, DB, CM, AB, BB, G7, G7, FM, FM, CM, CM, DB, DB, G7, G7),
-  tri: 'q7 ' + bassline('c c d- c a- b- g g f f c c d- d- g g', riff),
-  noise: 'v13 ' + BOSS_DRUMS + BOSS_DRUMS,
+  reverb: 0.4,
+  kit: KIT,
+  tracks: [
+    { inst: 'tbn_sus', vol: 0.65, pan: P.tbn, rev: 0.4, mml: 'v10 | o2 e1 | ^1 L v13 ' + BOSS_MELODY + 'v10 ' + bars(BOSS_B, fifth(40)) },
+    { inst: 'hn_sus', vol: 0.6, pan: P.hn, rev: 0.45, mml: '| r1 | r1 L v12 ' + BOSS_MELODY.replace(/o4/g, 'o5').replace(/o3/g, 'o4') + 'v10 ' + bars(BOSS_B, pad(57, 2)) },
+    {
+      inst: 'vln_trem', vol: 0.7, pan: P.vln,
+      mml: '| r1 | r1 L v6 ' + bars(BOSS_A, () => '{o5 e f}1 ') + 'v12 | o5 e2 a4 b4 | o6 c4 o5 b4 a2 | f2 a4 o6 c4 | o5 b2 a2 | d4 f4 a4 o6 d4 | c4 o5 a4 f4 d4 | e2 f2 | g+2 e2 ',
+    },
+    { inst: 'vc_spic', vol: 0.6, pan: P.vc, rev: 0.25, mml: '| r1 | r1 L v12 ' + bars(`${BOSS_A} ${BOSS_B}`, ostinato(40, [0, 0, 1, 0, 0, 0, 3, 1])) },
+    { inst: 'cb_sus', vol: 0.55, pan: P.cb, mml: 'v9 | o1 e1 | ^1 L ' + bars(`${BOSS_A} ${BOSS_B}`, bass(28)) },
+    {
+      inst: '', vol: 0.6, rev: 0.3,
+      mml: 'v12 | Y1 | v13 T4 T4 T8 T8 T8 T8 L [| T4 r8 T8 U8 U8 T4 ]7 | T8 U8 T8 U8 T16 T16 T16 T16 T8 T8 ' +
+        '[| T8 U8 R8 U8 T8 U8 R8 U8 ]7 | T16 T16 T16 T16 T16 T16 T16 T16 T4 T4 ',
+    },
+    { inst: '', vol: 0.6, rev: 0.2, mml: '| r1 | r1 L v12 [| B4 r2. ]16' },
+    { inst: '', vol: 0.5, rev: 0.45, mml: 'v11 | X1 | r2 S2 L | G1 | r1 | r1 | r1 | s1 | r1 | r1 | r2 S2 | G1 | r1 | r1 | r1 | C1 | r1 | r1 | r2 S2 ' },
+    { inst: 'chimes', vol: 1.0, pan: P.bell, rev: 0.7, mml: '| r1 | r1 L v9 [| o5 e1 | r1 | r1 | r1 ]4' },
+  ],
 };
 
-// ---------------------------------------------------------------- TEMPLE
-// The final temple: a B minor processional with taiko and a Neapolitan C.
+// ---------------------------------------------------------------- VICTORY
+// The demon falls: a short fanfare in the yo scale.
 
-const TEMPLE_FILL = '| t8 t8 t8 t8 u16 u16 u16 u16 u8 u8 ';
+const VICTORY_CHORDS = 'D G Em/A D D';
 
-const TEMPLE: SongSource = {
-  tempo: 104,
-  loop: true,
-  reverb: 0.42,
-  echo: { delay: 24, vol: 0.35 },
-  sq1:
-    '@2 v10 E6 S7 q8 y16 D8 ' +
-    '| o4 b2 o5 d4 c+8 d8 | e2. d4 | g4 f+8 e8 d4 e4 | c+2. o4 a+4 | o5 f+2 e4 d8 e8 | d4 o4 b4 o5 d4 g4 | g4. e8 c4 e4 | c+2 o4 a+2 ' +
-    '| o5 e4 g4 b4. a8 | g2 f+4 e4 | f+4 b4 o6 d4. c+8 | o5 b2. r4 | b4 a8 g8 d4 g4 | a4 g8 f+8 e4 c+4 | f+4. e8 d4 c+4 | c+1 ',
-  sq2:
-    '@1 v6 E8 S5 q8 y8 ' +
-    '| o4 f+1 | g1 | b1 | a+1 | b1 | g1 | e1 | f+2 a+2 ' +
-    '| o4 g1 | b1 | f+1 | f+1 | d1 | e1 | c+1 | o3 a+1 ',
-  tri: 'q8 ' + bassline('b g e f+ b g c f+ e e b b g a f+ f+', march),
-  noise:
-    'v12 ' + times(7, '| t4 r8 t8 t4 w4 ') + TEMPLE_FILL + '| x4 r8 t8 t4 w4 ' + times(6, '| t4 r8 t8 t4 w4 ') + TEMPLE_FILL,
-};
-
-// ---------------------------------------------------------------- TITLE
-// Taiko roll, then a stately D minor theme that rises to the relative major.
-
-const TITLE: SongSource = {
-  tempo: 88,
-  loop: true,
-  reverb: 0.34,
-  echo: { delay: 18, vol: 0.35 },
-  sq1:
-    '@2 v10 E6 S8 q8 y14 D8 | r1 | r1 L ' +
-    '| o4 a4 o5 d4 e4 f4 | f2 e8 d8 c4 | d2. o4 b-4 | a1 | a4 o5 d4 e4 f4 | g4 f4 e4 d4 | g2 f4 e-4 | c+2 e2 ' +
-    '| o5 a4. g8 f4 c4 | g4. f8 e4 c4 | f4. e8 d4 a4 | a2 g4 e4 | f4. g8 f4 d4 | c2 o4 a4 o5 c4 | d4 e8 f8 g4 b-4 | a1 ',
-  sq2:
-    '@1 v6 E8 S5 q8 y8 | o3 d1 | c+1 L ' +
-    '| o4 f1 | f1 | d1 | c+1 | f1 | d1 | e-1 | c+1 ' +
-    '| o4 c1 | e1 | d1 | c+1 | d1 | c1 | o3 b-1 | o4 c+1 ',
-  tri: 'q8 | o2 d1 | o1 a1 L ' + bassline('d b- g a d b- e- a f c d a b- f g a', stately),
-  noise:
-    'v12 | t4 r4 t8 t8 t4 | t8 t8 t8 t8 t16 t16 t16 t16 x4 L ' +
-    times(7, '| t4 h8 h8 s4 h8 h8 ') + '| t4 h8 h8 s8 s16 s16 s8 s8 ' +
-    '| x4 h8 h8 s4 h8 h8 ' + times(6, '| t4 h8 h8 s4 h8 h8 ') + '| t8 t8 s8 s8 u16 u16 u16 u16 s8 s8 ',
-};
-
-// ---------------------------------------------------------------- ENDING
-// Dawn: a gentle D major song over a harp-like arpeggio.
-
-const D_ = [57, 62, 66, 69], A_ = [57, 61, 64, 69], BM = [59, 62, 66, 71], FSM = [57, 61, 66, 69], G_ = [59, 62, 67, 71];
-
-const ENDING: SongSource = {
-  tempo: 80,
-  loop: true,
-  reverb: 0.34,
-  echo: { delay: 18, vol: 0.35 },
-  sq1:
-    '@1 v12 E6 S10 q8 y14 D8 ' +
-    '| o5 f+2 e4 d4 | c+2 e4 a4 | b2 a4 f+4 | a2 f+4 c+4 | d4 e4 f+4 g4 | a2 f+4 d4 | b4 o6 d4 o5 b4 g4 | a2 c+4 e4 ' +
-    '| o5 a4. f+8 a4 o6 d4 | c+2 o5 a4 e4 | f+4. g8 f+4 d4 | c+2. o4 a4 | b4 o5 d4 g4 b4 | a4 g4 f+4 e4 | f+2. e4 | d1 ',
-  sq2: '@2 v6 E3 S2 q6 ' + harp8(D_, A_, BM, FSM, G_, D_, G_, A_, D_, A_, BM, FSM, G_, A_, D_, D_),
-  tri: 'q8 ' + bassline('d a b f+ g d g a d a b f+ g a d d', stately),
-  noise: 'v7 ' + times(15, '| k8 h8 h8 h8 s8 h8 h8 h8 ') + '| k8 h8 h8 h8 s8 h8 s8 s8 ',
-};
-
-// ---------------------------------------------------------------- jingles
-
-const VICTORY: SongSource = {
-  tempo: 144,
+const VICTORY: SongDef = {
+  tempo: 100,
   loop: false,
-  reverb: 0.22,
-  echo: { delay: 6, vol: 0.25 },
-  sq1: '@2 v12 E3 S8 q7 D8 | o5 d8. d16 d8 d8 d4 o4 a8 o5 d8 | e8. e16 e8 e8 e4 c+8 e8 | f+4 a4 b4 o6 c+4 | d2. r4 ',
-  sq2: '@1 v8 E3 S6 q7 | o4 a8. a16 a8 a8 a4 f+8 a8 | o5 c+8. c+16 c+8 c+8 c+4 o4 a8 o5 c+8 | d4 f+4 g4 a4 | a2. r4 ',
-  tri: 'q7 | o2 d4 o1 a4 o2 d4 o1 a4 | a4 o2 e4 o1 a4 o2 e4 | o2 d4 f+4 g4 a4 | d2. r4 ',
-  noise: 'v12 | s8. s16 s8 s8 k4 s8 s8 | s8. s16 s8 s8 k4 s8 s8 | k4 k4 k4 s8 s8 | x2. r4 ',
+  reverb: 0.45,
+  kit: KIT,
+  tracks: [
+    { inst: 'hn_sus', vol: 0.7, pan: P.hn, rev: 0.5, mml: 'v12 | o4 d8 e8 g8 a8 b4 a4 | o5 d2 o4 b4 a4 | g4 a4 b4 o5 e4 | d1 | ^1 ' },
+    { inst: 'vln_sus', vol: 0.9, pan: P.vln, mml: 'v11 | o5 d8 e8 g8 a8 b4 a4 | o6 d2 o5 b4 a4 | g4 a4 b4 o6 e4 | d1 | ^1 ' },
+    { inst: 'vla_sus', vol: 0.5, pan: P.vla, mml: 'v9 ' + bars(VICTORY_CHORDS, pad(57, 3)) },
+    { inst: 'vc_sus', vol: 0.9, pan: P.vc, mml: 'v10 ' + bars(VICTORY_CHORDS, fifth(38)) },
+    { inst: 'cb_sus', vol: 0.5, pan: P.cb, mml: 'v9 ' + bars(VICTORY_CHORDS, bass(31)) },
+    { inst: 'harp', vol: 0.8, pan: P.harp, rev: 0.6, mml: 'v11 | r1 | r1 | r1 | o4 d16 f+16 a16 o5 d16 f+16 a16 o6 d16 f+16 r2 | r1 ' },
+    { inst: '', vol: 0.8, rev: 0.35, mml: 'v13 | T4 r4 T4 r4 | T4 r4 T8 t8 t8 t8 | T8 t8 t8 t8 T8 t8 T4 | T1 | r1 ' },
+    { inst: '', vol: 0.5, rev: 0.5, mml: 'v11 | r1 | r1 | r2 S2 | C1 | r1 ' },
+    { inst: '', vol: 0.45, rev: 0.6, mml: 'v10 | r1 | r1 | r1 | G1 | r1 ' },
+  ],
 };
 
-const GAMEOVER: SongSource = {
-  tempo: 72,
+// ---------------------------------------------------------------- GAME OVER
+// The lantern goes out: a lament for flute and koto.
+
+const GAMEOVER_CHORDS = 'Dm Bb Gm/A Dm Dm Dm';
+
+const GAMEOVER: SongDef = {
+  tempo: 56,
   loop: false,
-  reverb: 0.38,
-  echo: { delay: 18, vol: 0.3 },
-  sq1: '@2 v10 E8 S7 q8 y16 D8 | o5 a2 g4 f4 | e2 d4 c+4 | d4 f4 e4 c+4 | d1 ',
-  sq2: '@1 v6 E8 S5 q8 | o4 f2 e4 d4 | c+2 o3 a4 a4 | b-4 o4 d4 c+4 o3 a4 | a1 ',
-  tri: 'q8 | o2 d1 | o1 a1 | b-2 a2 | o2 d1 ',
-  noise: 'v8 | t2 r2 | r1 | t2 r2 | r1 ',
+  reverb: 0.6,
+  kit: KIT,
+  tracks: [
+    { inst: 'fl_sus', vol: 1.6, pan: P.fl, rev: 0.65, mml: 'y16 P45 v12 | o4 a2 b-8 a8 g4 | f2 e2 | d4. e8 f4 e4 | d1 | ^1 | r1 ' },
+    { inst: 'koto', vol: 0.45, pan: P.koto, rev: 0.5, mml: 'v7 ' + bars('Dm Bb Gm/A Dm', arp(50, 5, [0, 2, 3, 4, 3, 2, 1, 2])) + rests(2) },
+    { inst: 'vla_sus', vol: 0.4, pan: P.vla, mml: 'v5 ' + bars(GAMEOVER_CHORDS, pad(57, 2)) },
+    { inst: 'vc_sus', vol: 0.8, pan: P.vc, mml: 'v6 ' + bars(GAMEOVER_CHORDS, fifth(38)) },
+    { inst: 'cb_sus', vol: 0.4, pan: P.cb, mml: 'v6 ' + bars(GAMEOVER_CHORDS, bass(31)) },
+    { inst: '', vol: 0.9, rev: 0.7, mml: 'v9 | h1 | r1 | r1 | r1 | Z1 | r1 ' },
+  ],
 };
 
-export const SONGS = { TITLE, DUNGEON, WORLD, BATTLE, BOSS, VICTORY, GAMEOVER, ENDING, TEMPLE };
+export const SONGS = {
+  TITLE,
+  WORLD,
+  DUNGEON,
+  BATTLE,
+  BOSS,
+  VICTORY,
+  GAMEOVER,
+  // chapters 2-4 get their own themes later; until then they reuse these
+  TEMPLE: DUNGEON,
+  ENDING: TITLE,
+};
 export type SongName = keyof typeof SONGS;

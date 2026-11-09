@@ -1,17 +1,16 @@
 /**
- * Tiny MML dialect for authoring 4-channel FC music.
+ * MML dialect for the sampled orchestra.
  *
  *   c d e f g a b   notes (+ / # sharp, - flat), optional length and dots
- *   r               rest          ^len   tie onto previous note
+ *   {d f a}2        chord: notes that sound together (octave marks inside stay inside)
+ *   r               rest          ^len   tie onto the previous note
  *   o4 > <          octave        l8     default length
- *   v0-15           volume        @0-3   pulse duty (12.5/25/50/75%)
- *   E n             decay: -1 volume every n frames (0 = hold)
- *   S n             sustain floor the decay stops at (0-15)
+ *   v0-15           velocity: picks the sample layer and the loudness
  *   q1-8            gate (sounding fraction in eighths)
- *   y n             vibrato depth in cents (long notes only)
- *   D n             chorus: a twin voice detuned by n cents (0 = off)
+ *   @name           instrument, e.g. @vln_spic (see Sampler INSTRUMENTS)
+ *   y n             vibrato depth in cents     P n   scoop up from n cents flat
  *   [ ... ]n        repeat        L      loop point     |  bar line (checked by tests)
- *   k s h p x w t u drums (kick, snare, hat, open hat, crash, woodblock, taiko, shime-daiko)
+ *   other letters   drums from the song's kit, e.g. t -> taiko_ff
  *
  * Lengths are in a 96-ticks-per-whole-note grid.
  */
@@ -19,14 +18,13 @@ export interface NoteEvent {
   tick: number;
   len: number;
   gate: number;
-  midi: number; // -1 for drums
+  /** MIDI notes (several for a chord); empty for drums. */
+  notes: number[];
   drum: string;
-  vol: number;
-  duty: number;
-  decay: number;
-  sustain: number;
+  vel: number;
+  inst: string;
   vib: number;
-  chorus: number;
+  scoop: number;
 }
 
 export interface Channel {
@@ -38,7 +36,7 @@ export interface Channel {
 }
 
 const SEMI: Record<string, number> = { c: 0, d: 2, e: 4, f: 5, g: 7, a: 9, b: 11 };
-const DRUMS = 'kshpxwtu';
+const RESERVED = 'abcdefgrolvqyPL';
 
 export const TICKS_WHOLE = 96;
 
@@ -51,19 +49,17 @@ export function expandRepeats(src: string): string {
   return s;
 }
 
-export function parseMML(source: string): Channel {
+export function parseMML(source: string, kit: Record<string, string> = {}, inst = ''): Channel {
+  for (const k of Object.keys(kit)) if (k.length !== 1 || RESERVED.includes(k)) throw new Error(`MML: '${k}' cannot be a drum letter`);
   const s = expandRepeats(source);
   let i = 0;
   let tick = 0;
   let octave = 4;
   let defLen = 24;
-  let vol = 10;
-  let duty = 2;
-  let decay = 0;
-  let sustain = 0;
+  let vel = 10;
   let gateQ = 8;
   let vib = 0;
-  let chorus = 0;
+  let scoop = 0;
   let loopTick = 0;
   const events: NoteEvent[] = [];
   const bars: number[] = [];
@@ -87,22 +83,37 @@ export function parseMML(source: string): Channel {
     }
     return Math.round(len);
   };
-  const gateOf = (len: number) => Math.max(1, Math.round((len * gateQ) / 8));
+  const accidental = (semi: number) => {
+    while (s[i] === '+' || s[i] === '#' || s[i] === '-') semi += s[i++] === '-' ? -1 : 1;
+    return semi;
+  };
+  const push = (notes: number[], drum: string) => {
+    const len = length();
+    events.push({ tick, len, gate: Math.max(1, Math.round((len * gateQ) / 8)), notes, drum, vel, inst, vib, scoop });
+    tick += len;
+  };
 
   while (i < s.length) {
     const ch = s[i++];
     if (ch === '|') bars.push(tick);
     if (' \n\t\r|'.includes(ch)) continue;
     if (ch in SEMI) {
-      let semi = SEMI[ch];
-      while (s[i] === '+' || s[i] === '#' || s[i] === '-') semi += s[i++] === '-' ? -1 : 1;
-      const len = length();
-      events.push({ tick, len, gate: gateOf(len), midi: 12 * (octave + 1) + semi, drum: '', vol, duty, decay, sustain, vib, chorus });
-      tick += len;
-    } else if (DRUMS.includes(ch)) {
-      const len = length();
-      events.push({ tick, len, gate: gateOf(len), midi: -1, drum: ch, vol, duty, decay, sustain, vib, chorus });
-      tick += len;
+      push([12 * (octave + 1) + accidental(SEMI[ch])], '');
+    } else if (ch === '{') {
+      const notes: number[] = [];
+      let o = octave;
+      while (i < s.length && s[i] !== '}') {
+        const c = s[i++];
+        if (c in SEMI) notes.push(12 * (o + 1) + accidental(SEMI[c]));
+        else if (c === 'o') o = num() ?? o;
+        else if (c === '>') o++;
+        else if (c === '<') o--;
+        else if (c !== ' ') throw new Error(`MML: unexpected '${c}' in chord at ${i - 1}`);
+      }
+      i++;
+      push(notes, '');
+    } else if (ch in kit) {
+      push([], kit[ch]);
     } else if (ch === 'r') {
       tick += length();
     } else if (ch === '^') {
@@ -110,26 +121,24 @@ export function parseMML(source: string): Channel {
       const last = events[events.length - 1];
       if (last && last.tick + last.len === tick) {
         last.len += len;
-        last.gate = gateOf(last.len);
+        last.gate = Math.max(1, Math.round((last.len * gateQ) / 8));
       }
       tick += len;
+    } else if (ch === '@') {
+      const m = /^[a-z0-9_]+/.exec(s.slice(i));
+      if (!m) throw new Error(`MML: instrument name expected at ${i}`);
+      inst = m[0];
+      i += m[0].length;
     } else if (ch === 'o') octave = num() ?? 4;
     else if (ch === '>') octave++;
     else if (ch === '<') octave--;
     else if (ch === 'l') defLen = Math.round(TICKS_WHOLE / (num() ?? 4));
-    else if (ch === 'v') vol = num() ?? 10;
-    else if (ch === '@') duty = num() ?? 2;
-    else if (ch === 'E') decay = num() ?? 0;
-    else if (ch === 'S') sustain = num() ?? 0;
-    else if (ch === 'D') chorus = num() ?? 0;
+    else if (ch === 'v') vel = num() ?? 10;
     else if (ch === 'q') gateQ = num() ?? 8;
     else if (ch === 'y') vib = num() ?? 0;
+    else if (ch === 'P') scoop = num() ?? 0;
     else if (ch === 'L') loopTick = tick;
     else throw new Error(`MML: unexpected '${ch}' at ${i - 1}`);
   }
   return { events, length: tick, loopTick, bars };
-}
-
-export function midiToFreq(m: number): number {
-  return 440 * Math.pow(2, (m - 69) / 12);
 }
