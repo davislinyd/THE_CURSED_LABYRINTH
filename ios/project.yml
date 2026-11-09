@@ -1,0 +1,59 @@
+name: CursedLabyrinth
+options:
+  bundleIdPrefix: com.davislinyd
+  deploymentTarget:
+    iOS: '26.0'
+settings:
+  base:
+    SWIFT_VERSION: '6.0'
+    IPHONEOS_DEPLOYMENT_TARGET: '26.0'
+    DEVELOPMENT_TEAM: N964GDJY6A
+    CODE_SIGN_STYLE: Automatic
+    MARKETING_VERSION: '1.0'
+    CURRENT_PROJECT_VERSION: '9'
+    TARGETED_DEVICE_FAMILY: '1'
+    SWIFT_STRICT_CONCURRENCY: complete
+targets:
+  CursedLabyrinth:
+    type: application
+    platform: iOS
+    sources:
+      - Sources
+      - Resources/Assets.xcassets
+      - path: Resources/Shaders
+        type: folder
+      - path: Resources/Generated
+        type: folder
+    info:
+      path: build/Info.plist
+      properties:
+        CFBundleDisplayName: 幽燈魔境
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        CFBundleLocalizations: [en, zh-Hant]
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
+        UIApplicationSupportsIndirectInputEvents: true
+        UIRequiresFullScreen: true
+        UIAppFonts: [Generated/Fonts/cinzel.ttf, Generated/Fonts/noto-serif-tc.ttf]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.davislinyd.thecursedlabyrinth
+        GENERATE_INFOPLIST_FILE: false
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+  CursedLabyrinthUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [Tests/UITests]
+    dependencies:
+      - target: CursedLabyrinth
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: true
+schemes:
+  CursedLabyrinth:
+    build:
+      targets:
+        CursedLabyrinth: all
+    test:
+      targets: [CursedLabyrinthUITests]

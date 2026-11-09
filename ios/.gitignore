@@ -1,0 +1,11 @@
+build/
+.build/
+.swiftpm/
+.venv/
+.cache/
+.ai/status.json
+Resources/Generated/
+Resources/Assets.xcassets/
+*.xcodeproj/
+*.xcuserstate
+Tooling/node_modules/
