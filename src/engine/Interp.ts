@@ -5,6 +5,11 @@ interface Pose {
   q0: THREE.Quaternion;
   p1: THREE.Vector3;
   q1: THREE.Quaternion;
+  /**
+   * The angles as the logic left them: writing the quaternion derives new ones (yaw 2.5
+   * reads back as (π, 0.64, π)), and code that sets one angle (rotation.y = yaw) then turns wrong.
+   */
+  e1: THREE.Euler;
 }
 
 /** Farther than this between two ticks is a jump (a warp, a respawn), not motion. */
@@ -34,11 +39,12 @@ export class Interp {
     for (const o of objs) {
       let p = this.poses.get(o);
       if (!p) {
-        p = { p0: o.position.clone(), q0: o.quaternion.clone(), p1: new THREE.Vector3(), q1: new THREE.Quaternion() };
+        p = { p0: o.position.clone(), q0: o.quaternion.clone(), p1: new THREE.Vector3(), q1: new THREE.Quaternion(), e1: new THREE.Euler() };
         this.poses.set(o, p);
       }
       p.p1.copy(o.position);
       p.q1.copy(o.quaternion);
+      p.e1.copy(o.rotation);
     }
   }
 
@@ -57,7 +63,8 @@ export class Interp {
       const p = this.poses.get(o);
       if (!p) continue;
       o.position.copy(p.p1);
-      o.quaternion.copy(p.q1);
+      // the quaternion follows from the angles
+      o.rotation.copy(p.e1);
     }
   }
 }
