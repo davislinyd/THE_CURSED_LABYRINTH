@@ -99,7 +99,7 @@ src/
   ui/           UI、Text、Hud、MessageBox、DeathOverlay、PauseMenu、Options、Controls
   data/         levels（迷宮、大地圖、斜角地圖）、encounters、fontChars
   i18n/         t()、繁體中文翻譯表
-scripts/        assets/（素材管線）、blender/（原創 3D 道具的建模腳本與匯出的 GLB）、subset_fonts.py
+scripts/        assets/（素材管線）、blender/（原創 3D 道具的建模腳本、Blender 檔與匯出的 GLB）、subset_fonts.py
 tests/          Vitest
 ```
 
@@ -129,3 +129,4 @@ tests/          Vitest
 - 修正按倒退鍵時人物變成背著走：鏡頭不再跟著轉，人物先轉身再走。
 - 修正走路時人物抽動：走路循環改用平滑曲線，補上換腳時漏設的左手角度，動作交叉淡入被打斷時不再跳動，起步與停步的淡入延長為 0.2 秒。
 - 鏡頭：3D 鏡頭在牆邊平順地拉近；2D 按住滑鼠移動時路線不再忽左忽右。
+- 原創道具的 Blender 檔 `scripts/blender/props.blend` 加入版本控制（`blender-data` 分支，合併回 `main`）。
