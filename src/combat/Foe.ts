@@ -69,9 +69,10 @@ export class Foe {
   private kx = 0;
   private kz = 0;
 
-  constructor(readonly kind: EnemyKindCh1, public x: number, public z: number, readonly model: EnemyModel | null = null) {
+  /** `maxHp`: its hit points on the chosen difficulty (see Difficulty.toughness). */
+  constructor(readonly kind: EnemyKindCh1, public x: number, public z: number, readonly model: EnemyModel | null = null, readonly maxHp = FOES[kind].hp) {
     this.spec = FOES[kind];
-    this.hp = this.spec.hp;
+    this.hp = maxHp;
     this.homeX = x;
     this.homeZ = z;
   }

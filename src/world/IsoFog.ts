@@ -2,8 +2,8 @@ import { SUB } from './IsoMap';
 
 /** The fog of war of the isometric areas lifts in blocks of 3x3 tiles (one world-map tile on the plains). */
 export const FOG_BLOCK = 3;
-/** How far around the hero the fog lifts, in metres. */
-export const FOG_SIGHT = 18;
+/** How far around the hero the fog lifts, in metres (the view reaches 10-14 m from the hero). */
+export const FOG_SIGHT = 12;
 const SIZE = FOG_BLOCK * SUB;
 
 /** Key of a block in GameState.visited: "w:x,y" on the plains (world-map tiles), "<area>:x,y" elsewhere. */

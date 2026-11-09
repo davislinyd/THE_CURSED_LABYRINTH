@@ -1,3 +1,4 @@
+import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
 import { BUFFER, COUNTER_WINDOW, DODGE_TO_ATTACK, HeroInput, HeroMachine, PARRY_WINDOW, TIMING, USE_TICK } from '../src/combat/HeroMachine';
 import { SAMURAI_CLIPS } from '../src/actors/Samurai';
@@ -228,6 +229,23 @@ describe('hero state machine', () => {
     for (const [name, tm] of Object.entries(TIMING)) {
       const clip = SAMURAI_CLIPS[name as keyof typeof SAMURAI_CLIPS];
       expect(Math.round(clip.duration * 60), name).toBe(tm.len);
+    }
+  });
+
+  it('runs on a smooth loop: no joint snaps back or stops dead at a pose, and the free hand keeps still', () => {
+    const clip = SAMURAI_CLIPS.run, n = Math.round(clip.duration * 120);
+    for (const track of clip.tracks) {
+      if (!track.name.endsWith('.quaternion')) continue;
+      const f = track.InterpolantFactoryMethodLinear();
+      // two laps, a sample per tick, across the seam of the loop
+      const q = Array.from({ length: n }, (_, k) => new THREE.Quaternion().fromArray(Array.from(f.evaluate((k / 60) % clip.duration))));
+      // each tick's turn as a rotation vector in degrees; a snap is a sudden change of it
+      const turn = q.slice(1).map((b, k) => {
+        const r = q[k].clone().invert().multiply(b);
+        return new THREE.Vector3(r.x, r.y, r.z).multiplyScalar(((r.w < 0 ? -2 : 2) * 180) / Math.PI);
+      });
+      for (let k = 1; k < turn.length; k++) expect(turn[k].distanceTo(turn[k - 1]), `${track.name} tick ${k}`).toBeLessThan(4);
+      if (track.name === 'handL.quaternion') for (const r of q) expect(r.angleTo(q[0]) * (180 / Math.PI)).toBeLessThan(5);
     }
   });
 });

@@ -1,3 +1,4 @@
+import type { Fatigue } from '../combat/Fatigue';
 import { GameState, ITEM_NAMES, ItemId, MAX_WEAPON_LEVEL, WEAPON_EXP, weaponLevel } from '../core/GameState';
 import { t } from '../i18n';
 import { Dungeon } from '../world/DungeonMap';
@@ -8,18 +9,24 @@ import { COL, UI } from './UI';
 const BELT: ItemId[] = ['herb', 'elixir', 'talisman'];
 const SLOT_W = 76;
 
-/** Life, sword level, items and keys, along the screen's left edge. */
-export function drawHud(ui: UI, s: GameState, keys: number): void {
+/** Life, stamina (and run mode), sword level, items and keys, along the screen's left edge. */
+export function drawHud(ui: UI, s: GameState, keys: number, fatigue: Fatigue): void {
   ui.ctx.save();
   ui.ctx.translate(ui.left, 0);
   const w = s.maxLife * 9;
   ui.diamond(22, 26, 6, COL.lifeHi);
   ui.gauge(34, 20, w, 12, s.life / s.maxLife, COL.life, COL.lifeHi);
+  // stamina: what is left before the hero is worn out, blinking red while they are
+  const blink = fatigue.spent && ui.frame % 30 < 15;
+  ui.diamond(22, 40, 3.5, fatigue.spent ? COL.red : COL.gold);
+  ui.gauge(34, 38, 100, 4, 1 - fatigue.level, blink ? COL.crimson : COL.gold, blink ? COL.red : COL.goldLight);
+  if (fatigue.spent) ui.text(t('EXHAUSTED'), 142, 44, { size: 11, weight: 700, color: COL.red });
+  else if (fatigue.running) ui.text(t('RUN'), 142, 44, { size: 11, weight: 700, color: COL.goldLight });
   const lv = weaponLevel(s.weaponExp);
   const lo = WEAPON_EXP[lv - 1], hi = WEAPON_EXP[lv] ?? lo;
-  ui.text(t('SWORD LV{0}', lv), 34, 50, { size: 12, color: COL.goldLight, weight: 700 });
-  ui.gauge(110, 42, 84, 6, lv >= MAX_WEAPON_LEVEL ? 1 : (s.weaponExp - lo) / Math.max(1, hi - lo), COL.crimson, COL.red);
-  ui.text(t('{0} GOLD', s.gold), 34, 68, { size: 12, color: COL.goldLight });
+  ui.text(t('SWORD LV{0}', lv), 34, 62, { size: 12, color: COL.goldLight, weight: 700 });
+  ui.gauge(110, 54, 84, 6, lv >= MAX_WEAPON_LEVEL ? 1 : (s.weaponExp - lo) / Math.max(1, hi - lo), COL.crimson, COL.red);
+  ui.text(t('{0} GOLD', s.gold), 34, 80, { size: 12, color: COL.goldLight });
   // the item belt: keys 1-3, the item in hand lit
   BELT.forEach((id, i) => {
     const x = 18 + i * (SLOT_W + 6), on = id === s.currentItem, n = s.items[id];

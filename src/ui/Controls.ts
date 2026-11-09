@@ -8,13 +8,14 @@ import { COL, UI } from './UI';
 const ROWS: [string, string, string][] = [
   ['#', 'KEYBOARD', 'GAMEPAD'],
   ['MOVE', 'WASD / ↑↓←→', 'MOVE'],
+  ['RUN / WALK', 'RUN', 'RUN'],
   ['ATTACK', 'ATTACK', 'ATTACK'],
   ['STRONG ATTACK', 'STRONG', 'STRONG'],
   ['GUARD', 'GUARD', 'RB / RT'],
   ['DODGE', 'DODGE', 'DODGE'],
   ['EXAMINE / TALK', 'ACT', 'ACT'],
   ['USE ITEM', 'ITEM', 'ITEM'],
-  ['LOCK ON', 'LOCK', 'LT / R3'],
+  ['LOCK ON', 'LOCK', 'LOCK'],
   ['MINIMAP (LABYRINTH)', 'MAP', 'MAP'],
   ['ITEMS', 'SELECT', 'SELECT'],
   ['PAUSE', 'ENTER / ESC', 'START'],
@@ -39,7 +40,7 @@ export class ControlsScreen implements Scene {
   drawUI(ui: UI): void {
     ui.panel(40, 10, 560, 424);
     ui.text(t('CONTROLS'), 320, 50, { size: 22, weight: 700, align: 'center', color: COL.goldLight, spacing: 3 });
-    const pitch = 17;
+    const pitch = 16;
     ROWS.forEach(([act, kb, pad], i) => {
       const y = 86 + i * pitch + (i > 0 ? 5 : 0);
       if (act === '#') {

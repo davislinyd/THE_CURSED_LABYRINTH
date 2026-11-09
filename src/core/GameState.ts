@@ -1,3 +1,5 @@
+import type { Difficulty } from './Difficulty';
+
 export type Dir = 0 | 1 | 2 | 3; // NORTH, EAST, SOUTH, WEST
 export const NORTH: Dir = 0;
 export const EAST: Dir = 1;
@@ -35,6 +37,8 @@ export interface Stats {
 
 export interface GameState {
   version: 2;
+  /** Chosen for a new journey; may be changed later (saves from before it load as Normal). */
+  difficulty: Difficulty;
   life: number;
   maxLife: number;
   gold: number;
@@ -70,9 +74,10 @@ export function swordDamage(s: GameState): number {
 
 export const START_LOCATION: Location = { mode: 'world', x: 6, y: 25 };
 
-export function newGameState(): GameState {
+export function newGameState(difficulty: Difficulty = 'normal'): GameState {
   return {
     version: 2,
+    difficulty,
     life: 16,
     maxLife: 16,
     gold: 30,

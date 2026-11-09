@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { AutoInput, HeroActor, Mark } from '../actors/HeroActor';
 import { ROTROOT_ATTACK, ROTROOT_REACT, Rotroot, buildRotroot } from '../actors/Rotroot';
 import { HIT_STOP } from '../combat/HeroMachine';
+import { harm, toughness } from '../core/Difficulty';
 import type { Game } from '../core/Game';
 import { DungeonId, ItemId, swordDamage } from '../core/GameState';
 import { Scene } from '../core/SceneManager';
@@ -45,7 +46,9 @@ export class BossScene implements Scene {
   private ready = false;
   private phase: Phase = 'intro';
   private t = 0;
-  private hp = BOSS_HP;
+  /** Hit points on the chosen difficulty. */
+  private readonly maxHp: number;
+  private hp: number;
   private arm = 0;
   private struck = false;
   private lastSwing = -1;
@@ -68,6 +71,7 @@ export class BossScene implements Scene {
   };
 
   constructor(private readonly game: Game, private readonly id: DungeonId) {
+    this.maxHp = this.hp = toughness(game.state.difficulty, BOSS_HP);
     void this.build().catch((e) => console.error(e));
   }
 
@@ -130,7 +134,7 @@ export class BossScene implements Scene {
     this.boss.root.traverse((o) => (o.castShadow = (o as THREE.Mesh).isMesh === true));
     this.boss.root.position.set(BOSS.x, 0, BOSS.z);
     s3.add(this.boss.root);
-    this.hero = new HeroActor(0, 8);
+    this.hero = new HeroActor(0, 8, this.game.fatigue);
     this.hero.yaw = Math.PI;
     this.heroShadow = blobShadow(1.3);
     s3.add(this.hero.root, this.heroShadow, this.hero.effects);
@@ -247,7 +251,7 @@ export class BossScene implements Scene {
         }
         return;
       case 'idle': {
-        const rest = this.hp < BOSS_HP / 2 ? 50 : 80;
+        const rest = this.hp < this.maxHp / 2 ? 50 : 80;
         if (this.t < rest || !heroAlive) return;
         // the arm whose base points closest to the hero
         const toHero = Math.atan2(h.x - BOSS.x, h.z - BOSS.z);
@@ -325,7 +329,7 @@ export class BossScene implements Scene {
       h.x -= h.fx * 0.8;
       h.z -= h.fz * 0.8;
     } else if (r === 'hit') {
-      g.state.life = Math.max(0, g.state.life - damage);
+      g.state.life = Math.max(0, g.state.life - harm(g.state.difficulty, damage));
       g.sfx('hit_heavy', { pitch: 0.85 });
       g.scenes.flash(0.6, 0, 0, 5);
       this.cam.shake(0.4);
@@ -388,10 +392,10 @@ export class BossScene implements Scene {
     if (!this.ready) return;
     if (this.death) return this.death.draw(ui);
     const s = this.game.state;
-    drawHud(ui, s, 0);
+    drawHud(ui, s, 0, this.game.fatigue);
     const name = t('THE ROTROOT ELDER');
     ui.text(name, 320, 404, { size: 14, weight: 700, color: COL.goldLight, align: 'center', spacing: 2 });
-    ui.gauge(170, 412, 300, 9, this.hp / BOSS_HP, this.hurtFlash ? '#ffffff' : COL.crimson, COL.red);
+    ui.gauge(170, 412, 300, 9, this.hp / this.maxHp, this.hurtFlash ? '#ffffff' : COL.crimson, COL.red);
     const inp = this.game.input;
     if (!inp.locked && inp.mouse && inp.device === 'kb' && this.phase !== 'won') {
       ui.text(t('CLICK TO CONTROL THE CAMERA'), 320, 440, { size: 12, align: 'center', color: COL.gray });

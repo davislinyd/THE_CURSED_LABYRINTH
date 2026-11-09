@@ -1,3 +1,4 @@
+import { noiseTexture } from '../engine/ProcTex';
 import { FOG_BLOCK } from '../world/IsoFog';
 import { IsoGrid, SUB } from '../world/IsoMap';
 import { MiniPose, miniFrame } from './Hud';
@@ -13,8 +14,10 @@ const ROAD = '#a08c64';
 const MIST = '#5c3a70';
 /** Pixels per tile of the prepared image. */
 const PX = 2;
-/** Minimap pixels per metre. */
-const SCALE = 1.8;
+/** Minimap pixels per metre (about 48 m around the hero). */
+const SCALE = 1.2;
+/** Minimap pixels the ink wash over unexplored ground drifts each frame. */
+const DRIFT = 0.05;
 
 export interface MapIcon {
   x: number;
@@ -27,17 +30,24 @@ export interface MapIcon {
 /**
  * Minimap of an isometric area: the tiles are painted once into an image, masked by
  * the fog of war (with soft edges) whenever more is seen, and drawn turned like the view.
+ * Unexplored ground lies under a drifting ink wash.
  */
 export class IsoMinimap {
   private readonly tiles = document.createElement('canvas');
   private readonly fog = document.createElement('canvas');
   private readonly seen = document.createElement('canvas');
+  /** The ink wash, cut away where the fog has lifted. */
+  private readonly shroud = document.createElement('canvas');
+  private readonly wash: CanvasPattern;
   private dirty = true;
 
   /** `known` tells which fog blocks were seen on earlier visits. */
   constructor(private readonly grid: IsoGrid, known: (bx: number, by: number) => boolean) {
-    this.tiles.width = this.seen.width = grid.w * PX;
-    this.tiles.height = this.seen.height = grid.h * PX;
+    this.tiles.width = this.seen.width = this.shroud.width = grid.w * PX;
+    this.tiles.height = this.seen.height = this.shroud.height = grid.h * PX;
+    const tex = noiseTexture(41, '#2b2e3d', '#7a7d92', 64, 4);
+    this.wash = this.shroud.getContext('2d')!.createPattern(tex.image as HTMLCanvasElement, 'repeat')!;
+    tex.dispose();
     this.fog.width = Math.ceil(grid.w / FOG_BLOCK);
     this.fog.height = Math.ceil(grid.h / FOG_BLOCK);
     const blocks: [number, number][] = [];
@@ -80,9 +90,20 @@ export class IsoMinimap {
       g.drawImage(this.fog, 0, 0, this.fog.width * FOG_BLOCK * PX, this.fog.height * FOG_BLOCK * PX);
       g.globalCompositeOperation = 'source-over';
     }
+    if (!full) {
+      const g = this.shroud.getContext('2d')!, d = ui.frame * DRIFT;
+      this.wash.setTransform(new DOMMatrix([1, 0, 0, 1, d, d * 0.5]));
+      g.globalCompositeOperation = 'copy';
+      g.fillStyle = this.wash;
+      g.fillRect(0, 0, this.shroud.width, this.shroud.height);
+      g.globalCompositeOperation = 'destination-out';
+      g.drawImage(this.fog, 0, 0, this.fog.width * FOG_BLOCK * PX, this.fog.height * FOG_BLOCK * PX);
+      g.globalCompositeOperation = 'source-over';
+    }
     miniFrame(ui, pose, SCALE, () => {
       const g = ui.ctx;
       g.drawImage(full ? this.tiles : this.seen, 0, 0, this.grid.w * SUB, this.grid.h * SUB);
+      if (!full) g.drawImage(this.shroud, 0, 0, this.grid.w * SUB, this.grid.h * SUB);
       g.lineWidth = 1 / SCALE;
       g.strokeStyle = '#140d08';
       for (const ic of icons) {

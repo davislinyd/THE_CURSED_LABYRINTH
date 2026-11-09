@@ -5,7 +5,7 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { SMAAPass } from 'three/addons/postprocessing/SMAAPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
-import { InkPass } from './InkPass';
+import { InkPass, Mist } from './InkPass';
 import { washiTexture } from './ProcTex';
 
 /** Logical screen height, and the width of the centred safe area menus are laid out in. */
@@ -25,6 +25,8 @@ export type Effects = 'high' | 'low';
 export interface View {
   scene: THREE.Scene;
   camera: THREE.Camera;
+  /** Ink mist over the ground not yet explored (the isometric areas). */
+  mist?: Mist | null;
 }
 
 /**
@@ -263,6 +265,7 @@ export class Renderer {
     this.renderPass.scene = v.scene;
     this.renderPass.camera = v.camera;
     this.ink.setCamera(v.camera);
+    this.ink.setMist(v.mist ?? null, time);
     const u = this.finish.uniforms;
     u.uTime.value = time;
     u.uFade.value = fade;

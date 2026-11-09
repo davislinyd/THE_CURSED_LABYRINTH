@@ -153,6 +153,45 @@ export function makeClip(name: string, keys: Key[], p: Proportions = HUMAN): THR
   return new THREE.AnimationClip(name, times[times.length - 1], tracks);
 }
 
+/**
+ * A looping clip (a gait) from timed poses, the last one repeating the first. The joints
+ * pass through the poses on a smooth closed curve (Catmull-Rom over the angles, baked a key
+ * per tick): with straight steps every joint would stop dead or snap back at each pose,
+ * which in a stride reads as a twitch.
+ */
+export function makeLoop(name: string, keys: Key[], p: Proportions = HUMAN): THREE.AnimationClip {
+  const n = keys.length - 1, period = keys[n][0];
+  // key k of the loop, its time carried on past either end
+  const pose = (k: number) => keys[((k % n) + n) % n][1];
+  const time = (k: number) => keys[((k % n) + n) % n][0] + Math.floor(k / n) * period;
+  const ticks = Math.round(period * 60);
+  const times = Array.from({ length: ticks + 1 }, (_, i) => (i / ticks) * period);
+  /** Value of `f` at time t: cubic Hermite between the keys either side, sloped toward their neighbours. */
+  const curve = (t: number, f: (pose: Pose) => number) => {
+    let k = 0;
+    while (k < n - 1 && t >= keys[k + 1][0]) k++;
+    const t0 = time(k), t1 = time(k + 1), h = t1 - t0, u = (t - t0) / h;
+    const v0 = f(pose(k)), v1 = f(pose(k + 1));
+    const m0 = ((v1 - f(pose(k - 1))) / (t1 - time(k - 1))) * h;
+    const m1 = ((f(pose(k + 2)) - v0) / (time(k + 2) - t0)) * h;
+    return (2 * u ** 3 - 3 * u ** 2 + 1) * v0 + (u ** 3 - 2 * u ** 2 + u) * m0 + (3 * u ** 2 - 2 * u ** 3) * v1 + (u ** 3 - u ** 2) * m1;
+  };
+  const tracks: THREE.KeyframeTrack[] = [];
+  for (const bone of BONES) {
+    const values: number[] = [];
+    for (const t of times) {
+      const [x, y, z] = [0, 1, 2].map((c) => curve(t, (ps) => (ps[bone]?.[c] ?? 0) * D));
+      q.setFromEuler(e.set(x, y, z, 'YXZ'));
+      values.push(q.x, q.y, q.z, q.w);
+    }
+    tracks.push(new THREE.QuaternionKeyframeTrack(`${bone}.quaternion`, times, values));
+  }
+  const pos: number[] = [];
+  for (const t of times) pos.push(curve(t, (ps) => ps.sway?.[0] ?? 0), p.hipHeight + curve(t, (ps) => ps.lift ?? 0), curve(t, (ps) => ps.sway?.[1] ?? 0));
+  tracks.push(new THREE.VectorKeyframeTrack('hips.position', times, pos));
+  return new THREE.AnimationClip(name, period, tracks);
+}
+
 /** Mirror a pose left/right (for alternating steps). */
 export function mirror(pose: Pose): Pose {
   const out: Pose = { lift: pose.lift, sway: pose.sway ? [-pose.sway[0], pose.sway[1]] : undefined };

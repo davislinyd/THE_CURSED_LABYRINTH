@@ -16,11 +16,14 @@ const MANUAL_HOLD = 120;
 /** Field of view (degrees), and the share of a zoom punch kept each tick. */
 const FOV = 55;
 const PUNCH_KEEP = 0.8;
+/** The camera keeps this far (metres) in front of a wall behind it. */
+const WALL_GAP = 0.35;
 
 /**
  * Third-person camera behind the hero. The mouse or right stick turns and tilts
- * it; otherwise it swings behind the hero while they run forward or back. It
- * frames a locked target, and pulls in when a wall is between.
+ * it; otherwise it swings in behind the hero while they run away from it (not
+ * toward it: turning after a hero who runs the way it looks would turn their way
+ * too). It frames a locked target, and pulls in when a wall is between.
  */
 export class FollowCam {
   readonly camera = new THREE.PerspectiveCamera(FOV, 640 / 448, 0.1, 90);
@@ -58,20 +61,24 @@ export class FollowCam {
     if (target) this.yaw += wrap(Math.atan2(target.x - hero.x, target.z - hero.z) - this.yaw) * 0.12;
     else if (snap) this.yaw = heroYaw;
     else if (this.manual > 0) this.manual--;
-    else if (moving && Math.abs(steerX) < 0.45) this.yaw += wrap(heroYaw - this.yaw) * 0.02;
+    else if (moving && Math.abs(steerX) < 0.45) {
+      const off = wrap(heroYaw - this.yaw);
+      if (Math.abs(off) < Math.PI / 2) this.yaw += off * 0.02;
+    }
     const fx = Math.sin(this.yaw), fz = Math.cos(this.yaw);
     // orbit at the tilted elevation, closer in where the roof would be in the way
     const e = ELEVATION + this.pitch;
     const r = Math.sin(e) > 0 ? Math.min(ORBIT, (this.maxY - PIVOT_Y) / Math.sin(e)) : ORBIT;
     const hd = r * Math.cos(e), up = PIVOT_Y + r * Math.sin(e);
-    const want = { x: hero.x - fx * hd, z: hero.z - fz * hd };
-    const k = clearance(hero, want, solid, 0.15);
-    const d = k < 1 ? Math.max(1.1, hd * k - 0.35) : hd;
+    // look past the orbit by the gap, so the camera starts to pull in as smoothly as a wall comes near
+    const reach = hd + WALL_GAP;
+    const k = clearance(hero, { x: hero.x - fx * reach, z: hero.z - fz * reach }, solid, 0.15);
+    const d = Math.max(1.1, Math.min(hd, reach * k - WALL_GAP));
     // boxed in by rock behind: climb over the shoulder instead of crowding the back
     const y = Math.max(0.5, Math.min(this.maxY, up + (1 - d / hd) * 1.1));
     const nx = hero.x - fx * d, nz = hero.z - fz * d;
     if (!this.ready || snap) this.pos.set(nx, y, nz);
-    else this.pos.lerp(new THREE.Vector3(nx, y, nz), k < 1 ? 0.5 : 0.2);
+    else this.pos.lerp(new THREE.Vector3(nx, y, nz), d < hd ? 0.5 : 0.2);
     // aim a little ahead so the hero sits low in the frame
     this.look.set(hero.x + fx * 1.2, 1.25, hero.z + fz * 1.2);
     if (target) this.look.lerp(new THREE.Vector3(target.x, 1.2, target.z), 0.25);

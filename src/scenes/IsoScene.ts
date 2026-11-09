@@ -4,6 +4,7 @@ import { AutoInput, HeroActor } from '../actors/HeroActor';
 import { VillagerModel } from '../actors/Villager';
 import { BLOOD, EYE_Y, FOES, Foe } from '../combat/Foe';
 import { HIT_STOP } from '../combat/HeroMachine';
+import { harm, toughness } from '../core/Difficulty';
 import type { Game } from '../core/Game';
 import { ITEM_NAMES, ItemId, hasItem, swordDamage } from '../core/GameState';
 import { Scene } from '../core/SceneManager';
@@ -23,8 +24,9 @@ import { COL, UI, inRect } from '../ui/UI';
 import { YesNo } from '../ui/YesNo';
 import { Fx, blobShadow } from '../world/Fx';
 import { DRIFT } from '../world/Drift';
-import { P2, collide } from '../world/Grid3D';
-import { fogBlock, fogKey, liftFog } from '../world/IsoFog';
+import { P2, clearWay, collide } from '../world/Grid3D';
+import { FogVeil } from '../world/FogVeil';
+import { FOG_BLOCK, fogBlock, fogKey, liftFog } from '../world/IsoFog';
 import { IsoGrid, SUB, tileMid, tileOf, worldMid, worldRows, worldTile } from '../world/IsoMap';
 import { CUT, IsoLevel, IsoTheme, buildIsoLevel } from '../world/IsoLevel';
 import { Lantern } from '../world/Level3D';
@@ -119,6 +121,8 @@ export class IsoScene implements Scene {
   private level!: IsoLevel;
   private kit!: PropKit;
   private mini!: IsoMinimap;
+  /** The fog of war in the 3D view. */
+  private veil!: FogVeil;
   private hero!: HeroActor;
   private heroShadow!: THREE.Mesh;
   private readonly heroLight = new THREE.PointLight(0xffd2a0, 10, 13, 1.3);
@@ -197,7 +201,9 @@ export class IsoScene implements Scene {
       s3.add(l);
     }
     for (const [ch, ms] of this.level.mists) for (const m of ms) m.visible = !g.state.flags[`barrier:${ch}`];
-    this.mini = new IsoMinimap(grid, (bx, by) => !!g.state.visited[fogKey(this.area, bx, by)]);
+    const known = (bx: number, by: number) => !!g.state.visited[fogKey(this.area, bx, by)];
+    this.mini = new IsoMinimap(grid, known);
+    this.veil = new FogVeil(Math.ceil(grid.w / FOG_BLOCK), Math.ceil(grid.h / FOG_BLOCK), known);
 
     let start: P2;
     if (this.area === 'world') {
@@ -236,7 +242,7 @@ export class IsoScene implements Scene {
         }
       }
     }
-    this.hero = new HeroActor(start.x, start.z);
+    this.hero = new HeroActor(start.x, start.z, g.fatigue);
     this.hero.yaw = ISO_YAW;
     this.hero.root.traverse((o) => (o.castShadow = true));
     this.heroShadow = blobShadow(1.3);
@@ -246,7 +252,7 @@ export class IsoScene implements Scene {
     this.movers.addRig(this.hero.root);
     this.cam.update(this.hero.pos, true);
     this.see();
-    this.view = { scene: s3, camera: this.cam.camera };
+    this.view = { scene: s3, camera: this.cam.camera, mist: g.reveal ? null : this.veil };
     this.ready = true;
   }
 
@@ -270,7 +276,7 @@ export class IsoScene implements Scene {
 
   private spawn(kind: EnemyKindCh1, x: number, z: number): Foe {
     const model = BUILD_ENEMY[kind]();
-    const f = new Foe(kind, x, z, model);
+    const f = new Foe(kind, x, z, model, toughness(this.game.state.difficulty, FOES[kind].hp));
     f.yaw = Math.random() * Math.PI * 2;
     model.root.position.set(x, 0, z);
     // meshes only: a wisp carries a point light, which would render (and keep) a cube shadow map
@@ -326,7 +332,7 @@ export class IsoScene implements Scene {
       if (e === 'use') this.useItem();
       if (e === 'dust') this.fx.dust(h.x, h.z);
     }
-    if (h.state === 'run' && this.frame % 20 === 0) g.sfx(this.area === 'village' ? 'step_stone' : 'step_grass', { vol: 0.3 });
+    if (h.state === 'run' && this.frame % Math.round(20 / h.fatigue.pace) === 0) g.sfx(this.area === 'village' ? 'step_stone' : 'step_grass', { vol: 0.3 });
     this.strikeFoes();
     this.strikeJars();
     if (!modal) this.updateFoes(alive);
@@ -350,6 +356,8 @@ export class IsoScene implements Scene {
       if (this.prompt && inp.pressed('act')) this.interact(this.prompt);
     } else this.prompt = null;
     if (this.frame % 10 === 0) this.see();
+    this.veil.tick();
+    this.view!.mist = g.reveal ? null : this.veil;
     this.level.update(this.frame / 60);
     this.cam.update(h.pos, false);
     this.updateLights();
@@ -385,7 +393,11 @@ export class IsoScene implements Scene {
       this.interact(this.prompt!);
     } else if (onSpot) out.attack = inp.mouseLeft || h.machine.ready;
     else if (inp.mouseLeft) this.click(ground);
-    else if (ground && inp.mouseHeld && this.goal?.kind === 'walk' && !this.goal.then && !this.goal.loot && this.frame % 6 === 0) this.walkTo(ground);
+    else if (ground && inp.mouseHeld && this.goal?.kind === 'walk' && !this.goal.then && !this.goal.loot && this.frame % 6 === 0) {
+      // held down: follow the cursor, finding a new way only once it has moved off the old end
+      const end = this.goal.path[this.goal.path.length - 1];
+      if (!end || Math.hypot(end.x - ground.x, end.z - ground.z) > 0.75) this.walkTo(ground);
+    }
     this.follow(out);
     if (this.aim) out.face = Math.atan2(this.aim.x - h.x, this.aim.z - h.z);
     return out;
@@ -424,6 +436,12 @@ export class IsoScene implements Scene {
       this.goal = null;
       if (then) this.interact(then);
       return;
+    }
+    // cut the corners of the tile-to-tile path: head straight for the farthest point in plain reach
+    for (let i = Math.min(goal.path.length, 8) - 1; i > 0; i--) {
+      if (!clearWay(h.pos, goal.path[i], h.radius, this.grid.solid)) continue;
+      goal.path.splice(0, i);
+      break;
     }
     const n = goal.path[0], dx = n.x - h.x, dz = n.z - h.z, d = Math.hypot(dx, dz) || 1;
     out.dx = dx / d;
@@ -628,7 +646,7 @@ export class IsoScene implements Scene {
       this.fx.spark(at, 0xffe0a0, 1.2);
       this.hitStop = 3;
     } else if (r === 'hit') {
-      g.state.life = Math.max(0, g.state.life - f.spec.damage);
+      g.state.life = Math.max(0, g.state.life - harm(g.state.difficulty, f.spec.damage));
       g.sfx('hit_heavy', { pitch: 0.9 });
       g.scenes.flash(0.6, 0, 0, 5);
       this.cam.shake(0.3);
@@ -914,13 +932,13 @@ export class IsoScene implements Scene {
       ui.ctx.fillRect(p.x - w / 2, p.y - 15, w, 19);
       ui.text(text, p.x, p.y, { size: 12, weight: 600, color: COL.goldLight, align: 'center' });
     }
-    drawHud(ui, s, 0);
+    drawHud(ui, s, 0, this.game.fatigue);
     if (this.game.settings.minimap) this.drawMinimap(ui);
     // the foe under the cursor: its name and what is left of it
     if (hv?.foe?.alive) {
       const f = hv.foe;
       ui.text(t(FOE_NAMES[f.kind]), 320, 22, { size: 13, weight: 700, color: COL.text, align: 'center', spacing: 1 });
-      ui.gauge(250, 29, 140, 6, Math.max(0, f.hp) / f.spec.hp, COL.crimson, COL.red);
+      ui.gauge(250, 29, 140, 6, Math.max(0, f.hp) / f.maxHp, COL.crimson, COL.red);
     }
     if (this.frame < 200) {
       const a = Math.min(1, this.frame / 30, (200 - this.frame) / 40);
@@ -951,8 +969,9 @@ export class IsoScene implements Scene {
 
   /** Lift the fog of war around the hero. */
   private see(): void {
-    const h = this.hero;
-    this.mini.reveal(liftFog(this.game.state.visited, this.area, this.grid.w, this.grid.h, h.x, h.z));
+    const h = this.hero, seen = liftFog(this.game.state.visited, this.area, this.grid.w, this.grid.h, h.x, h.z);
+    this.mini.reveal(seen);
+    this.veil.reveal(seen);
   }
 
   private lootText(l: Loot): string {
@@ -996,6 +1015,7 @@ export class IsoScene implements Scene {
       if (m.isMesh && m.geometry) m.geometry.dispose();
     });
     this.level?.dispose();
+    this.veil?.dispose();
     this.fx.dispose();
     this.hero?.dispose();
     for (const f of this.foes) f.model?.dispose();

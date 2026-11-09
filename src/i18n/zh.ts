@@ -61,8 +61,8 @@ export const ZH: Record<string, string> = {
   '{CANCEL}: SKIP': '{CANCEL}：跳過',
 
   // ---- remake: menus, options, controls
-  '{MOVE} MOVE · {ATTACK} ATTACK · {STRONG} STRONG · {GUARD} GUARD · {DODGE} DODGE · {ACT} EXAMINE · {ITEM} ITEM · {LOCK} LOCK ON · {MAP} MAP · {START} PAUSE · F FULLSCREEN':
-    '{MOVE} 移動・{ATTACK} 攻擊・{STRONG} 強攻擊・{GUARD} 防禦・{DODGE} 閃避・{ACT} 調查・{ITEM} 道具・{LOCK} 鎖定・{MAP} 地圖・{START} 暫停・F 全螢幕',
+  '{MOVE} MOVE · {RUN} RUN / WALK · {ATTACK} ATTACK · {STRONG} STRONG · {GUARD} GUARD · {DODGE} DODGE · {ACT} EXAMINE · {ITEM} ITEM · {LOCK} LOCK ON · {MAP} MAP · {START} PAUSE · F FULLSCREEN':
+    '{MOVE} 移動・{RUN} 跑／走・{ATTACK} 攻擊・{STRONG} 強攻擊・{GUARD} 防禦・{DODGE} 閃避・{ACT} 調查・{ITEM} 道具・{LOCK} 鎖定・{MAP} 地圖・{START} 暫停・F 全螢幕',
   '{CONFIRM}: YES    {CANCEL}: NO': '{CONFIRM}：是　　{CANCEL}：否',
   '{CONFIRM}: QUIT    {CANCEL}: STAY': '{CONFIRM}：離開　　{CANCEL}：留下',
   '←→ CHANGE   {CANCEL}: BACK': '←→：調整　　{CANCEL}：返回',
@@ -104,6 +104,17 @@ export const ZH: Record<string, string> = {
   'NOW LOADING': '讀取中',
   'LOADING FAILED': '讀取失敗',
   '{MOVE}: MOVE   {START}: PAUSE': '{MOVE}：移動　　{START}：暫停',
+  // run, fatigue, difficulty
+  'RUN / WALK': '跑步／走路',
+  RUN: '奔跑',
+  EXHAUSTED: '力竭',
+  DIFFICULTY: '難度',
+  EASY: '簡單',
+  NORMAL: '一般',
+  HARD: '困難',
+  'HALF DAMAGE TAKEN · WEAKER FOES · SLOWER FATIGUE': '受到的傷害減半・敵人較弱・不易疲勞',
+  'THE CHALLENGE AS INTENDED': '原本設計的難度',
+  'MORE DAMAGE TAKEN · TOUGHER FOES · FASTER FATIGUE': '受到的傷害增加・敵人較強・容易疲勞',
 
   // ---- status bar
   LIFE: '體力',

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { DIFFICULTIES, DIFFICULTY_INFO } from '../core/Difficulty';
 import type { Game } from '../core/Game';
 import { Scene } from '../core/SceneManager';
 import { View } from '../engine/Renderer';
@@ -12,6 +13,9 @@ import { YesNo } from '../ui/YesNo';
 
 const MENU = ['NEW GAME', 'CONTINUE', 'OPTIONS', 'CONTROLS'];
 const MENU_AT = { x: 320, y: 296 };
+/** The difficulty choice for a new journey. */
+const PICK_AT = { x: 320, y: 284 };
+const PICK: MenuOpts = { align: 'center', width: 160, pitch: 28, size: 17 };
 
 interface Flame {
   light: THREE.PointLight;
@@ -33,6 +37,8 @@ export class TitleScene implements Scene {
   private menu = false;
   private cursor = 0;
   private confirmNew: YesNo | null = null;
+  /** Index into DIFFICULTIES while choosing one for a new journey. */
+  private pick: number | null = null;
   private readonly hasSave = SaveManager.hasSave();
   private readonly oldSave = SaveManager.hasOldSave();
   readonly moving: readonly THREE.Object3D[];
@@ -241,10 +247,11 @@ export class TitleScene implements Scene {
       const r = this.confirmNew.update(g);
       if (r === 'yes') {
         SaveManager.clear();
-        g.newGame();
+        g.newGame(DIFFICULTIES[this.pick ?? 1]);
       } else if (r === 'no') this.confirmNew = null;
       return;
     }
+    if (this.pick !== null) return this.choosePick();
     if (!this.menu) {
       if (this.frame > 30 && (inp.pressed('confirm') || g.input.mouseLeft)) {
         this.menu = true;
@@ -282,19 +289,43 @@ export class TitleScene implements Scene {
   private choose(): void {
     const g = this.game;
     if (this.cursor === 0) {
-      if (this.hasSave) {
-        this.confirmNew = new YesNo(t('ERASE THE SAVED JOURNEY?'), 1, COL.red);
-        g.sfx('cursor');
-      } else {
-        g.sfx('confirm');
-        g.newGame();
-      }
+      this.pick = 1;
+      g.sfx('confirm');
     } else if (this.cursor === 1) {
       g.sfx(g.continueGame() ? 'confirm' : 'locked');
     } else {
       g.sfx('confirm');
       g.scenes.push(this.cursor === 2 ? new OptionsMenu(g) : new ControlsScreen(g));
     }
+  }
+
+  /** EASY / NORMAL / HARD for the new journey; the saved one is erased only after that, on a yes. */
+  private choosePick(): void {
+    const g = this.game, inp = g.input, n = DIFFICULTIES.length;
+    let pick = this.pick ?? 1;
+    const m = menuMouse(inp, n, PICK_AT.x, PICK_AT.y, PICK);
+    if (m.hover >= 0 && m.hover !== pick) {
+      pick = m.hover;
+      g.sfx('cursor');
+    }
+    if (inp.repeat('up') || inp.repeat('down')) {
+      pick = (pick + (inp.repeat('up') ? n - 1 : 1)) % n;
+      g.sfx('cursor');
+    } else if (inp.pressed('cancel') || inp.mouseRight) {
+      this.pick = null;
+      g.sfx('cancel');
+      return;
+    } else if (inp.pressed('confirm') || m.click >= 0) {
+      if (m.click >= 0) pick = m.click;
+      if (this.hasSave) {
+        this.confirmNew = new YesNo(t('ERASE THE SAVED JOURNEY?'), 1, COL.red);
+        g.sfx('cursor');
+      } else {
+        g.sfx('confirm');
+        g.newGame(DIFFICULTIES[pick]);
+      }
+    }
+    this.pick = pick;
   }
 
   private animate(): void {
@@ -326,6 +357,8 @@ export class TitleScene implements Scene {
     this.drawLogo(ui, a);
     if (!this.menu) {
       if (this.frame > 30 && (this.frame >> 5) & 1) ui.text(t('PRESS {START}'), 320, 330, { size: 18, align: 'center', color: COL.text, spacing: 2 });
+    } else if (this.pick !== null) {
+      if (!this.confirmNew) this.drawPick(ui, this.pick);
     } else {
       ui.panel(230, 262, 180, 140);
       ui.menu(MENU.map((m) => t(m)), MENU_AT.x, MENU_AT.y, this.cursor, this.menuOpts());
@@ -333,6 +366,14 @@ export class TitleScene implements Scene {
     }
     this.confirmNew?.draw(ui);
     ui.text(t('ORIGINAL WORK 2026'), ui.right - 12, 436, { size: 11, align: 'right', color: COL.gray });
+  }
+
+  private drawPick(ui: UI, pick: number): void {
+    ui.panel(160, 214, 320, 206);
+    ui.text(t('DIFFICULTY'), 320, 244, { size: 16, weight: 700, align: 'center', color: COL.goldLight, spacing: 3 });
+    ui.line(220, 254, 420, 254, COL.goldDim);
+    ui.menu(DIFFICULTIES.map((d) => t(DIFFICULTY_INFO[d].name)), PICK_AT.x, PICK_AT.y, pick, PICK);
+    ui.wrap(t(DIFFICULTY_INFO[DIFFICULTIES[pick]].desc), 288, 12).forEach((l, i) => ui.text(l, 320, 376 + i * 16, { size: 12, align: 'center', color: COL.gray }));
   }
 
   private drawLogo(ui: UI, alpha: number): void {
