@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+    <title>幽燈魔境 THE CURSED LABYRINTH</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'%3E%3Crect width='16' height='16' fill='%23000'/%3E%3Crect x='3' y='3' width='10' height='2' fill='%23747474'/%3E%3Crect x='5' y='5' width='6' height='6' fill='%23fc9838'/%3E%3Crect x='7' y='11' width='2' height='4' fill='%23747474'/%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="./src/style.css" />
+  </head>
+  <body>
+    <div id="app">
+      <div id="screen">
+        <canvas id="display" aria-label="幽燈魔境 game screen"></canvas>
+      </div>
+      <div id="bar">
+        <span id="hint">←↑→↓ MOVE · X JUMP / OK · Z SWORD / CANCEL · ↑+Z ITEM · ENTER PAUSE · SHIFT ITEMS · F FULLSCREEN</span>
+        <span>
+          <button id="btn-pad" type="button">TOUCH PAD</button>
+          <button id="btn-full" type="button">FULLSCREEN</button>
+        </span>
+      </div>
+      <div id="pad" hidden>
+        <div class="dpad">
+          <button data-btn="up" class="up">▲</button>
+          <button data-btn="left" class="left">◀</button>
+          <button data-btn="right" class="right">▶</button>
+          <button data-btn="down" class="down">▼</button>
+        </div>
+        <div class="mid">
+          <button data-btn="select">SHIFT</button>
+          <button data-btn="start">ENTER</button>
+        </div>
+        <div class="ab">
+          <button data-btn="b">Z</button>
+          <button data-btn="a">X</button>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="./src/main.ts"></script>
+  </body>
+</html>

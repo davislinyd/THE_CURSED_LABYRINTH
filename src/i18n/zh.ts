@@ -1,0 +1,264 @@
+/**
+ * Traditional Chinese text, keyed by the English source string.
+ * Every character used here must exist in the baked pixel font (src/data/fontZh.ts);
+ * tests/i18n.test.ts checks both the coverage of keys and of glyphs.
+ */
+export const ZH: Record<string, string> = {
+  // ---- title / menus
+  'NEW GAME': '新遊戲',
+  CONTINUE: '繼續遊戲',
+  OPTIONS: '設定',
+  CONTROLS: '操作說明',
+  'PRESS {START}': '請按 {START}',
+  'ERASE THE SAVED JOURNEY?': '要清除目前的存檔嗎？',
+  '{A}: YES    {B}: NO': '{A}：是　　{B}：否',
+  'ORIGINAL WORK 2026': '原創作品 2026',
+  PAUSE: '暫停',
+  RESUME: '繼續',
+  ITEMS: '道具',
+  'QUIT TO TITLE': '回到標題',
+  'UNSAVED PROGRESS IS LOST.': '未存檔的進度將會遺失。',
+  '{A}: QUIT    {B}: STAY': '{A}：離開　　{B}：留下',
+  YES: '是',
+  NO: '否',
+
+  // ---- options
+  'BGM VOLUME': '音樂音量',
+  'SFX VOLUME': '音效音量',
+  SOUND: '聲音',
+  SCANLINES: '掃描線',
+  FLICKER: '精靈閃爍',
+  'PIXEL ASPECT': '像素比例',
+  'TOUCH PAD': '觸控按鍵',
+  LANGUAGE: '語言',
+  BACK: '返回',
+  ON: '開',
+  OFF: '關',
+  LIGHT: '淡',
+  MEDIUM: '中',
+  '←→ CHANGE   {B}: BACK': '←→：調整　　{B}：返回',
+
+  // ---- controls
+  'SIDE VIEW': '橫向關卡',
+  MOVE: '移動',
+  JUMP: '跳躍',
+  SLASH: '揮刀',
+  'USE ITEM': '使用道具',
+  LABYRINTH: '迷宮',
+  'FORWARD / BACK': '前進／後退',
+  TURN: '轉向',
+  'EXAMINE · STRIKE': '調查、攻擊',
+  ANYWHERE: '共通',
+  'CONFIRM / CANCEL': '確定／取消',
+  'PAUSE MENU': '暫停選單',
+  'ITEMS · MAP': '道具、地圖',
+  FULLSCREEN: '全螢幕',
+  '{B}: BACK': '{B}：返回',
+  'PRESS {A}': '請按 {A}',
+  '←↑→↓ MOVE · {A} JUMP / OK · {B} SWORD / CANCEL · ↑+{B} ITEM · {START} PAUSE · {SELECT} ITEMS · F FULLSCREEN':
+    '←↑→↓ 移動・{A} 跳躍／確定・{B} 揮刀／取消・↑+{B} 道具・{START} 暫停・{SELECT} 道具欄・F 全螢幕',
+  '{START}: SKIP': '{START}：跳過',
+
+  // ---- status bar
+  LIFE: '體力',
+  SWORD: '劍',
+  SEAL: '封印',
+  KEY: '鑰',
+
+  // ---- items
+  HERB: '藥草',
+  ELIXIR: '靈藥',
+  TALISMAN: '符咒',
+  'BITTER MOUNTAIN HERB. RESTORES 6 LIFE.': '苦澀的山中藥草。回復 6 點體力。',
+  'SHRINE ELIXIR. RESTORES ALL LIFE.': '神社的靈藥。體力全部回復。',
+  'WARDING PAPER. THROWN WITH ↑+{B} IN BATTLE. PIERCES SPIRITS.': '驅邪的符紙。戰鬥中按 ↑+{B} 擲出，可以貫穿靈體。',
+  LODESTONE: '磁石',
+  'SHOWS YOUR HEADING IN THE LABYRINTH.': '在迷宮中指示你面向的方位。',
+  'GHOST CANDLE': '幽靈燭',
+  'ITS PALE FLAME PIERCES CURSED DARKNESS.': '蒼白的燭火能照穿被詛咒的黑暗。',
+  'MAP OF GROTTO': '洞窟地圖',
+  'A CHART OF THE ROTWOOD GROTTO.': '朽木洞窟的地圖。',
+  'MAP OF MINE': '礦坑地圖',
+  'A CHART OF THE BLOOD MIST MINE.': '血霧礦坑的地圖。',
+  'MAP OF CRYPT': '地城地圖',
+  'A CHART OF THE HUNDRED DEMON CRYPT.': '百鬼地城的地圖。',
+  'MAP OF TEMPLE': '神殿地圖',
+  'A CHART OF THE UNDERWORLD TEMPLE.': '冥王神殿的地圖。',
+  'BRONZE MIRROR': '青銅鏡',
+  'SEAL I. REVEALS FALSE WALLS AS A SHIMMER.': '第一封印。假牆會在鏡光中閃爍。',
+  'BLOOD JEWEL': '血玉',
+  'SEAL II. ITS PULSE HARDENS YOUR BODY.': '第二封印。它的脈動讓身體更加強韌。',
+  'BONE FLUTE': '骨笛',
+  'SEAL III. ITS CRY OPENS THE LAST GATE.': '第三封印。笛聲能開啟最後的門。',
+  'SPIRIT BLADE': '靈刃',
+  'A BLESSED EDGE. SWORD DAMAGE +1.': '受過祝福的刀刃。劍的傷害 +1。',
+
+  // ---- inventory
+  MAP: '地圖',
+  TREASURES: '寶物',
+  'NONE YET': '尚無',
+  '{A}: EQUIP': '{A}：裝備',
+  'FACING {0}': '面向：{0}',
+  'NO MAP: ONLY WHAT YOU HAVE SEEN': '沒有地圖：只顯示走過的地方',
+  N: '北',
+  E: '東',
+  S: '南',
+  W: '西',
+
+  // ---- places
+  'NORTHERN WILDS': '北方荒野',
+  'MISTY PASS': '霧之山道',
+  'HAIYA PLAINS': '灰谷平原',
+  'HAIYA VILLAGE': '灰谷村',
+  'KAGARI VILLAGE': '篝火村',
+  'ROTWOOD GROTTO': '朽木洞窟',
+  'BLOOD MIST MINE': '血霧礦坑',
+  'HUNDRED DEMON CRYPT': '百鬼地城',
+  'UNDERWORLD TEMPLE': '冥王神殿',
+  'CHAPTER I': '第一章',
+  'CHAPTER II': '第二章',
+  'CHAPTER III': '第三章',
+  'FINAL CHAPTER': '終章',
+  'THE ROTWOOD ROAD': '朽木古道',
+  'THE BLOOD MIST PASS': '血霧山道',
+  'GRAVEYARD OF DEMONS': '百鬼墓場',
+  'THE HELLFIRE STAIR': '業火石階',
+
+  // ---- world map
+  'ENTER {0}?': '要進入{0}嗎？',
+  'A QUIET SHRINE. YOUR WOUNDS CLOSE.': '寧靜的神社。傷口癒合了。',
+  'A WALL OF GHOSTLY MIST BARS THE PASS. SHAPES MOVE WITHIN IT... AN ILLUSION, PERHAPS?':
+    '一道幽靈般的濃霧擋住了山道，霧中有影子在晃動……或許是幻象？',
+  'THE BRONZE MIRROR FLARES. THE MIST WAS NEVER THERE.': '青銅鏡閃耀光芒。那道霧原本就不存在。',
+  'A SEAL OF BLOOD BINDS THE BRIDGE. IT HUNGERS FOR SOMETHING THAT BEATS LIKE A HEART.':
+    '血之封印束縛著橋樑。它渴求著某個如心臟般跳動的東西。',
+  'THE BLOOD JEWEL PULSES. THE SEAL DRINKS IT IN AND FADES.': '血玉脈動著。封印吸入了它的力量，逐漸消散。',
+  'THE TEMPLE GATE IS SEALED THREE TIMES OVER. MIRROR, JEWEL AND FLUTE...': '神殿大門被封印了三重。鏡、玉，還有笛……',
+  'THE THREE SEALS SING TOGETHER. THE GATE OF THE DEAD SWINGS OPEN.': '三件封印一同鳴響。亡者之門緩緩開啟。',
+  'A MOUNTAIN SHRINE. THE LAMP STILL BURNS HERE. YOUR WOUNDS CLOSE AND YOUR PATH IS RECORDED.':
+    '山中的神社，燈火依然亮著。傷口癒合了，旅程已記錄。',
+  'A WAYSIDE SHRINE IN THE PASS. THE STONE FOX WATCHES. YOUR WOUNDS CLOSE AND YOUR PATH IS RECORDED.':
+    '山道旁的小神社，石狐靜靜守望。傷口癒合了，旅程已記錄。',
+
+  // ---- villages
+  'WELCOME TO {0}, TRAVELLER. THE LAMPS STILL BURN HERE.': '旅人，歡迎來到{0}。這裡的燈火依然亮著。',
+  TALK: '交談',
+  SHOP: '商店',
+  'INN  {0}G': '旅店 {0}G',
+  LEAVE: '離開',
+  DONE: '結束',
+  'OWN ×{0}': '持有 ×{0}',
+  'INNKEEPER: YOU HAVE NOT THE COIN, FRIEND.': '旅店老闆：朋友，你的錢不夠啊。',
+  'YOU SLEEP BENEATH A WARM LAMP. LIFE RESTORED. YOUR JOURNEY IS RECORDED.': '你在溫暖的燈下安睡。體力已回復，旅程已記錄。',
+  'ELDER: THE LAMPS OF THE OLD ROADS WENT OUT ONE NIGHT, AND THE DEAD CAME WALKING. THREE SEALS WERE STOLEN BY THREE DEMONS.':
+    '長老：某天夜裡，古道上的燈火全熄了，亡者開始四處遊蕩。三件封印被三個妖魔奪走了。',
+  'ELDER: WEST, PAST THE CEDARS, LIES THE ROTWOOD ROAD. ITS GROTTO HIDES THE FIRST SEAL, THE BRONZE MIRROR.':
+    '長老：往西穿過杉林就是朽木古道。那裡的洞窟藏著第一件封印──青銅鏡。',
+  'GIRL: IN THE LABYRINTHS, WALLS SOMETIMES LIE. STRIKE THE CRACKED ONES. AND KEEP A CANDLE FOR THE DARK.':
+    '少女：迷宮裡的牆有時會騙人，看到裂開的牆就砍下去。還有，記得準備蠟燭對付黑暗。',
+  'OLD SMITH: PRESS ↑ AND {B} TOGETHER TO USE YOUR ITEM. TALISMANS FLY TRUE THROUGH ANY SPIRIT.':
+    '老鐵匠：同時按 ↑ 和 {B} 就能使用道具。符咒能筆直貫穿任何靈體。',
+  'MONK: THE HUNDRED DEMON CRYPT LIES AMONG THE GRAVES TO THE WEST. ITS GATES MOVE WITH THE LEVERS.':
+    '僧人：百鬼地城位於西邊的墓地之中。城裡的閘門會隨拉桿移動。',
+  'MONK: TWO LEVERS, FOUR GATES. WHEN A PATH CLOSES, ANOTHER OPENS. LISTEN FOR THE GRINDING STONE.':
+    '僧人：兩根拉桿，四道閘門。一條路關上，另一條就會打開。仔細聽石頭摩擦的聲音。',
+  'WIDOW: BEYOND THE NORTH GATE STANDS THE TEMPLE OF MEIOU. ONLY ALL THREE SEALS WILL OPEN IT.':
+    '寡婦：北門之外矗立著冥王神殿。只有集齊三件封印才能打開。',
+  'FARMER: THE GIANT SKELETON IS ALL HUNGER. WHEN ITS JAW COMES DOWN TO BITE, STRIKE THE SKULL.':
+    '農夫：那具巨大骷髏只知道飢餓。當牠低下頭咬過來時，就砍牠的頭骨。',
+
+  // ---- labyrinths
+  'THE KEY TURNS. THE LOCK FALLS AWAY.': '鑰匙轉動，鎖應聲脫落。',
+  'A HEAVY LOCK. YOU NEED A KEY.': '沉重的鎖，需要鑰匙。',
+  'THE {0} SHINES. THE SEAL CRUMBLES!': '{0}發出光芒，封印崩落了！',
+  'A SACRED SEAL. ONLY THE {0} CAN BREAK IT.': '神聖的封印。只有{0}能夠破除。',
+  'ROTTEN BOARDS BAR THE WAY. STRIKE THEM WITH YOUR SWORD! ({A})': '腐朽的木板擋住了去路。用劍砍開它！（{A}）',
+  'AN IRON GATE. IT WILL NOT BUDGE. PERHAPS A LEVER MOVES IT.': '鐵閘門紋風不動。也許拉桿能讓它移動。',
+  'LEAVE THE LABYRINTH?': '要離開迷宮嗎？',
+  'A TERRIBLE PRESENCE WAITS BEYOND. ENTER?': '門後有可怕的氣息。要進去嗎？',
+  'THE LEVER GROANS DOWNWARD. SOMEWHERE, IRON GATES GRIND.': '拉桿嘎吱一聲被拉下。遠處傳來鐵閘門摩擦的聲音。',
+  'THE LEVER SNAPS BACK UP. DISTANT GATES SHIFT AGAIN.': '拉桿彈回原位。遠方的閘門再次移動。',
+  'THE ROTTEN DOOR BURSTS APART!': '腐朽的門被劈碎了！',
+  'NO {0} LEFT.': '{0}已經用完了。',
+  'THE TALISMAN FLUTTERS AND FALLS. IT IS MEANT FOR BATTLE.': '符咒飄落在地。它是用在戰鬥中的。',
+  'YOU ARE ALREADY HALE.': '你的體力已經是滿的。',
+  'THE ELIXIR BURNS LIKE SUNLIGHT. LIFE FULLY RESTORED!': '靈藥如陽光般灼熱。體力全部回復！',
+  'THE BITTER HERB RESTORES YOUR STRENGTH.': '苦澀的藥草讓你恢復了體力。',
+  'CURSED DARKNESS... THE GHOST CANDLE FLARES PALE BLUE.': '被詛咒的黑暗……幽靈燭燃起蒼藍的火光。',
+  'A CURSED DARKNESS SWALLOWS ALL LIGHT. YOU CAN BARELY SEE.': '被詛咒的黑暗吞噬了所有光線，幾乎什麼都看不見。',
+  'THE CHEST CREAKS OPEN.': '寶箱嘎吱一聲打開了。',
+  'SOMETHING GLINTS IN THE DUST...': '塵土中有東西在閃爍……',
+  'SPIKES! THEY BITE DEEP.': '尖刺！深深刺進了身體。',
+  'THE WALL WAS AN ILLUSION! A HIDDEN PASSAGE.': '牆壁是幻象！發現了隱藏的通道。',
+  'THE CIRCLE FLARES - YOU ARE CAST ELSEWHERE!': '法陣亮起──你被傳送到了別處！',
+  'FOUND AN IRON KEY.': '得到了鐵鑰匙。',
+  'FOUND {0} GOLD.': '得到了 {0} 金。',
+  'FOUND {0} ×{1}.': '得到了{0} ×{1}。',
+  'FOUND THE {0}! {1}': '得到了{0}！{1}',
+  ' ({SELECT} TO VIEW)': '（按 {SELECT} 查看）',
+  'FOUND A SPIRIT VESSEL! MAXIMUM LIFE RISES.': '得到了靈魂容器！體力上限提升了。',
+  'THE STONE READS: "WHERE THE NORTH PATH ENDS, THE EASTERN STONE IS ONLY A WHISPER. WALK THROUGH."':
+    '石碑上寫著：「北邊道路的盡頭，東側的石牆只是一陣低語。直接走過去吧。」',
+  'CARVED BY A MINER: "TWO IRON LOCKS GUARD THE ALTAR. WE HID THE KEYS AT THE FAR ENDS OF THE WEST AND EAST TUNNELS."':
+    '礦工刻下的字：「祭壇由兩道鐵鎖守護。我們把鑰匙藏在東西兩條坑道的最深處。」',
+  'A PALE MINER\'S GHOST: "I DUG TOO DEEP... THE CENTIPEDE SLEEPS PAST TWO LOCKS. STRIKE HER HEAD - HER SHELL TURNS STEEL."':
+    '蒼白的礦工亡魂：「我挖得太深了……蜈蚣沉睡在兩道鎖的後面。要攻擊牠的頭，牠的甲殼硬如鋼鐵。」',
+  'ETCHED IN BONE: "THE DEMON BLADE SLEEPS BEHIND THE WALL AT YOUR BACK. A TRUE MIRROR SEES THE STONE BREATHE."':
+    '刻在骨頭上的字：「妖刀沉睡在你身後的牆裡。真正的鏡子能看見石頭在呼吸。」',
+  'A WARNING: "BEYOND LIES THE CIRCLE OF RETURN. THOSE WHO STEP IN IT ARE CAST BACK TO THE BEGINNING."':
+    '警告：「前方是歸還之陣。踏入者將被送回起點。」',
+  'GOLDEN LETTERS: "THREE SEALS, THREE GATES - MIRROR, JEWEL AND FLUTE. THE KING WAITS AT THE HEART."':
+    '金色的文字：「三件封印，三道門──鏡、玉與笛。王在中心等候。」',
+
+  // ---- battle
+  'SWORD LV{0}': '劍 LV{0}',
+  AMBUSH: '伏擊',
+  'THE ROAD IS OPEN': '道路開通了',
+  VICTORY: '勝利',
+  '{0} GOLD': '{0} 金',
+  '{0} IS VANQUISHED': '{0}被擊敗了',
+  'A SEAL IS YOURS': '取得了封印',
+  'THE CURSE BREAKS': '詛咒解除了',
+  'YOU HAVE FALLEN': '你倒下了',
+  ROTROOT: '朽根',
+  'THE ROTROOT ELDER': '朽根老樹',
+  MUKADE: '蜈蚣',
+  'CRIMSON MUKADE': '赤蜈蚣',
+  DOKURO: '髑髏',
+  GASHADOKURO: '餓者髑髏',
+  MEIOU: '冥王',
+  'MEIOU, KING OF THE DEAD': '亡者之王　冥王',
+
+  // ---- game over
+  'GAME OVER': '遊戲結束',
+  'CONTINUE {0}': '接關 {0}',
+  TITLE: '回到標題',
+  'CONTINUE: FULL LIFE, HALF GOLD': '接關：體力全滿，金錢減半',
+  'NO CONTINUES REMAIN.': '已經沒有接關次數了。',
+  'LOAD YOUR RECORD FROM TITLE.': '請從標題畫面讀取存檔。',
+
+  // ---- story
+  'THE LAND OF HAIYA WAS KEPT BY LAMPS. EVERY NIGHT THE SHRINE LAMPS BURNED, AND THE DEAD SLEPT.':
+    '灰谷之地由燈火守護。每晚神社的燈火燃起，亡者便安然沉睡。',
+  'THEN MEIOU, KING OF THE DEAD, SPLIT THE EARTH. HE STOLE THE THREE SEALS AND GAVE THEM TO HIS DEMONS.':
+    '然而亡者之王冥王撕裂了大地，奪走三件封印，交給了手下的妖魔。',
+  'THE LAMPS WENT OUT. THE OLD ROADS TWISTED INTO LABYRINTHS. THE DEAD BEGAN TO WALK.': '燈火熄滅，古道扭曲成迷宮，亡者開始四處遊蕩。',
+  'KAGEMARU, LAST OF THE LAMP WARDENS, DREW HIS BLADE AND WALKED INTO THE DARK.': '最後的守燈人影丸拔出刀，走進了黑暗之中。',
+  'TAKE BACK THE MIRROR, THE JEWEL AND THE FLUTE. OPEN THE TEMPLE OF THE DEAD. RELIGHT THE LAMPS.':
+    '奪回鏡、玉與笛，開啟亡者的神殿，重新點亮燈火。',
+  'THE MASK OF MEIOU SPLIT IN TWO. A WIND FROM NOWHERE BLEW THROUGH THE TEMPLE, AND THE DEAD LAY DOWN.':
+    '冥王的面具裂成兩半。一陣不知從何而來的風吹過神殿，亡者們紛紛倒下安息。',
+  'ONE BY ONE, THE SHRINE LAMPS OF HAIYA FLICKERED BACK TO LIFE. THE LABYRINTHS WERE ONLY ROADS AGAIN.':
+    '灰谷的神社燈火一盞接一盞重新亮起。迷宮又變回了平凡的道路。',
+  'KAGEMARU RETURNED THE THREE SEALS TO THE MOUNTAIN SHRINE, AND WALKED ON INTO THE DAWN.': '影丸將三件封印送回山中神社，然後走向了黎明。',
+  'THE LAMPS BURN AGAIN': '燈火再次燃起',
+  TIME: '遊戲時間',
+  'DEMONS SLAIN': '擊敗妖魔',
+  FALLEN: '倒下次數',
+  CONTINUES: '接關次數',
+  'CHESTS OPENED': '開啟寶箱',
+  'SECRETS FOUND': '發現秘密',
+  'STEPS IN THE MAZE': '迷宮步數',
+  RANK: '評價',
+  'THE END': '完',
+};
