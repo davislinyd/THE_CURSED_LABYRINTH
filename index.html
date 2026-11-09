@@ -11,29 +11,11 @@
     <div id="app">
       <div id="screen">
         <canvas id="display" aria-label="幽燈魔境 game screen"></canvas>
+        <canvas id="ui" aria-hidden="true"></canvas>
       </div>
       <div id="bar">
-        <span id="hint">←↑→↓ MOVE · X JUMP / OK · Z SWORD / CANCEL · ↑+Z ITEM · ENTER PAUSE · SHIFT ITEMS · F FULLSCREEN</span>
-        <span>
-          <button id="btn-pad" type="button">TOUCH PAD</button>
-          <button id="btn-full" type="button">FULLSCREEN</button>
-        </span>
-      </div>
-      <div id="pad" hidden>
-        <div class="dpad">
-          <button data-btn="up" class="up">▲</button>
-          <button data-btn="left" class="left">◀</button>
-          <button data-btn="right" class="right">▶</button>
-          <button data-btn="down" class="down">▼</button>
-        </div>
-        <div class="mid">
-          <button data-btn="select">SHIFT</button>
-          <button data-btn="start">ENTER</button>
-        </div>
-        <div class="ab">
-          <button data-btn="b">Z</button>
-          <button data-btn="a">X</button>
-        </div>
+        <span id="hint"></span>
+        <button id="btn-full" type="button">⛶</button>
       </div>
     </div>
     <script type="module" src="./src/main.ts"></script>

@@ -34,7 +34,7 @@ export interface Stats {
 }
 
 export interface GameState {
-  version: 1;
+  version: 2;
   life: number;
   maxLife: number;
   gold: number;
@@ -68,17 +68,11 @@ export function swordDamage(s: GameState): number {
   return 1 + Math.floor((weaponLevel(s.weaponExp) - 1) / 2) + (s.keyItems.includes('blade') ? 1 : 0);
 }
 
-/** Slash reach in pixels for the side-view sword arc. */
-export function swordReach(s: GameState): number {
-  const lv = weaponLevel(s.weaponExp);
-  return lv >= 7 ? 26 : lv >= 4 ? 22 : 18;
-}
-
 export const START_LOCATION: Location = { mode: 'world', x: 6, y: 25 };
 
 export function newGameState(): GameState {
   return {
-    version: 1,
+    version: 2,
     life: 16,
     maxLife: 16,
     gold: 30,

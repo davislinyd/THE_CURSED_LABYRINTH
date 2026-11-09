@@ -1,0 +1,3469 @@
+{
+ "sources": {
+  "polyhaven": {
+   "title": "Poly Haven",
+   "author": "Poly Haven and its artists",
+   "url": "https://polyhaven.com",
+   "license": "CC0-1.0",
+   "licenseFile": "CC0-1.0.txt"
+  },
+  "vsco2ce": {
+   "title": "VSCO 2 Community Edition",
+   "author": "Versilian Studios",
+   "url": "https://github.com/sgossner/VSCO-2-CE",
+   "license": "CC0-1.0",
+   "licenseFile": "CC0-1.0.txt"
+  },
+  "vcsl": {
+   "title": "Versilian Community Sample Library",
+   "author": "Versilian Studios and contributors",
+   "url": "https://github.com/sgossner/VCSL",
+   "license": "CC0-1.0",
+   "licenseFile": "CC0-1.0.txt"
+  },
+  "original": {
+   "title": "Original models",
+   "author": "幽燈魔境 project (modelled in Blender)",
+   "url": "scripts/blender",
+   "license": "original"
+  },
+  "kenney": {
+   "title": "Kenney audio packs",
+   "author": "Kenney (www.kenney.nl)",
+   "url": "https://kenney.nl/assets/category:Audio",
+   "license": "CC0-1.0",
+   "licenseFile": "CC0-1.0.txt"
+  },
+  "cinzel": {
+   "title": "Cinzel",
+   "author": "The Cinzel Project Authors",
+   "url": "https://github.com/NDISCOVER/Cinzel",
+   "license": "OFL-1.1",
+   "licenseFile": "Cinzel-OFL.txt"
+  },
+  "notoseriftc": {
+   "title": "Noto Serif TC",
+   "author": "Google Inc.",
+   "url": "https://github.com/notofonts/noto-cjk",
+   "license": "OFL-1.1",
+   "licenseFile": "NotoSerifTC-OFL.txt"
+  }
+ },
+ "assets": {
+  "font/cinzel": {
+   "kind": "font",
+   "source": "cinzel",
+   "origin": "https://github.com/NDISCOVER/Cinzel",
+   "files": [
+    "../fonts/cinzel.woff2"
+   ]
+  },
+  "font/noto-serif-tc": {
+   "kind": "font",
+   "source": "notoseriftc",
+   "origin": "https://github.com/notofonts/noto-cjk",
+   "files": [
+    "../fonts/noto-serif-tc.woff2"
+   ]
+  },
+  "hdri/moonlit_golf": {
+   "kind": "hdri",
+   "source": "polyhaven",
+   "origin": "https://polyhaven.com/a/moonlit_golf",
+   "author": "Greg Zaal",
+   "files": [
+    "hdri/moonlit_golf.hdr"
+   ]
+  },
+  "inst/cb_sus": {
+   "kind": "instrument",
+   "source": "vsco2ce",
+   "origin": "https://github.com/sgossner/VSCO-2-CE/tree/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Solo%20Contrabass/SusVib",
+   "files": [
+    "audio/inst/cb_sus/30_1_1.m4a",
+    "audio/inst/cb_sus/31_1_1.m4a",
+    "audio/inst/cb_sus/34_1_1.m4a",
+    "audio/inst/cb_sus/36_1_1.m4a",
+    "audio/inst/cb_sus/38_1_1.m4a",
+    "audio/inst/cb_sus/40_1_1.m4a",
+    "audio/inst/cb_sus/42_1_1.m4a",
+    "audio/inst/cb_sus/44_1_1.m4a",
+    "audio/inst/cb_sus/45_1_1.m4a",
+    "audio/inst/cb_sus/49_1_1.m4a",
+    "audio/inst/cb_sus/52_1_1.m4a",
+    "audio/inst/cb_sus/56_1_1.m4a",
+    "audio/inst/cb_sus/59_1_1.m4a"
+   ],
+   "samples": [
+    {
+     "f": "audio/inst/cb_sus/30_1_1.m4a",
+     "n": 30,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/cb_sus/31_1_1.m4a",
+     "n": 31,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/cb_sus/34_1_1.m4a",
+     "n": 34,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/cb_sus/36_1_1.m4a",
+     "n": 36,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/cb_sus/38_1_1.m4a",
+     "n": 38,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/cb_sus/40_1_1.m4a",
+     "n": 40,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/cb_sus/42_1_1.m4a",
+     "n": 42,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/cb_sus/44_1_1.m4a",
+     "n": 44,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/cb_sus/45_1_1.m4a",
+     "n": 45,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/cb_sus/49_1_1.m4a",
+     "n": 49,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/cb_sus/52_1_1.m4a",
+     "n": 52,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/cb_sus/56_1_1.m4a",
+     "n": 56,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/cb_sus/59_1_1.m4a",
+     "n": 59,
+     "v": 1,
+     "r": 1
+    }
+   ]
+  },
+  "inst/chimes": {
+   "kind": "instrument",
+   "source": "vcsl",
+   "origin": "https://github.com/sgossner/VCSL/tree/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Tubular%20Bells%201",
+   "files": [
+    "audio/inst/chimes/60_1_1.m4a",
+    "audio/inst/chimes/62_2_1.m4a",
+    "audio/inst/chimes/64_2_2.m4a",
+    "audio/inst/chimes/66_3_1.m4a",
+    "audio/inst/chimes/68_2_1.m4a",
+    "audio/inst/chimes/70_2_1.m4a",
+    "audio/inst/chimes/72_2_2.m4a",
+    "audio/inst/chimes/74_2_2.m4a",
+    "audio/inst/chimes/76_2_2.m4a"
+   ],
+   "samples": [
+    {
+     "f": "audio/inst/chimes/60_1_1.m4a",
+     "n": 60,
+     "v": 0.333,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/chimes/62_2_1.m4a",
+     "n": 62,
+     "v": 0.667,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/chimes/64_2_2.m4a",
+     "n": 64,
+     "v": 0.667,
+     "r": 2
+    },
+    {
+     "f": "audio/inst/chimes/66_3_1.m4a",
+     "n": 66,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/chimes/68_2_1.m4a",
+     "n": 68,
+     "v": 0.667,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/chimes/70_2_1.m4a",
+     "n": 70,
+     "v": 0.667,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/chimes/72_2_2.m4a",
+     "n": 72,
+     "v": 0.667,
+     "r": 2
+    },
+    {
+     "f": "audio/inst/chimes/74_2_2.m4a",
+     "n": 74,
+     "v": 0.667,
+     "r": 2
+    },
+    {
+     "f": "audio/inst/chimes/76_2_2.m4a",
+     "n": 76,
+     "v": 0.667,
+     "r": 2
+    }
+   ]
+  },
+  "inst/fl_sus": {
+   "kind": "instrument",
+   "source": "vsco2ce",
+   "origin": "https://github.com/sgossner/VSCO-2-CE/tree/440300901dfe9275fd84e0b7763af1f8443ae62e/Woodwinds/Flute/susNV",
+   "files": [
+    "audio/inst/fl_sus/60_1_1.m4a",
+    "audio/inst/fl_sus/64_1_1.m4a",
+    "audio/inst/fl_sus/69_1_1.m4a",
+    "audio/inst/fl_sus/72_1_1.m4a",
+    "audio/inst/fl_sus/76_1_1.m4a",
+    "audio/inst/fl_sus/81_1_1.m4a",
+    "audio/inst/fl_sus/84_1_1.m4a",
+    "audio/inst/fl_sus/88_1_1.m4a",
+    "audio/inst/fl_sus/93_1_1.m4a",
+    "audio/inst/fl_sus/96_1_1.m4a"
+   ],
+   "samples": [
+    {
+     "f": "audio/inst/fl_sus/60_1_1.m4a",
+     "n": 60,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/fl_sus/64_1_1.m4a",
+     "n": 64,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/fl_sus/69_1_1.m4a",
+     "n": 69,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/fl_sus/72_1_1.m4a",
+     "n": 72,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/fl_sus/76_1_1.m4a",
+     "n": 76,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/fl_sus/81_1_1.m4a",
+     "n": 81,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/fl_sus/84_1_1.m4a",
+     "n": 84,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/fl_sus/88_1_1.m4a",
+     "n": 88,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/fl_sus/93_1_1.m4a",
+     "n": 93,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/fl_sus/96_1_1.m4a",
+     "n": 96,
+     "v": 1,
+     "r": 1
+    }
+   ]
+  },
+  "inst/glass": {
+   "kind": "instrument",
+   "source": "vcsl",
+   "origin": "https://github.com/sgossner/VCSL/tree/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Friction%20Idiophones/Wine%20Glasses/Sustains/Slow",
+   "files": [
+    "audio/inst/glass/75_1_1.m4a",
+    "audio/inst/glass/78_1_1.m4a",
+    "audio/inst/glass/82_1_1.m4a",
+    "audio/inst/glass/86_1_1.m4a"
+   ],
+   "samples": [
+    {
+     "f": "audio/inst/glass/75_1_1.m4a",
+     "n": 75,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/glass/78_1_1.m4a",
+     "n": 78,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/glass/82_1_1.m4a",
+     "n": 82,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/glass/86_1_1.m4a",
+     "n": 86,
+     "v": 1,
+     "r": 1
+    }
+   ]
+  },
+  "inst/harp": {
+   "kind": "instrument",
+   "source": "vsco2ce",
+   "origin": "https://github.com/sgossner/VSCO-2-CE/tree/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Harp",
+   "files": [
+    "audio/inst/harp/28_3_1.m4a",
+    "audio/inst/harp/31_1_1.m4a",
+    "audio/inst/harp/35_2_1.m4a",
+    "audio/inst/harp/38_2_1.m4a",
+    "audio/inst/harp/41_2_1.m4a",
+    "audio/inst/harp/45_2_1.m4a",
+    "audio/inst/harp/48_2_1.m4a",
+    "audio/inst/harp/52_2_1.m4a",
+    "audio/inst/harp/55_2_1.m4a",
+    "audio/inst/harp/59_2_1.m4a",
+    "audio/inst/harp/62_2_1.m4a",
+    "audio/inst/harp/65_2_1.m4a",
+    "audio/inst/harp/69_2_1.m4a",
+    "audio/inst/harp/72_2_1.m4a",
+    "audio/inst/harp/76_2_1.m4a",
+    "audio/inst/harp/79_2_1.m4a",
+    "audio/inst/harp/83_2_1.m4a",
+    "audio/inst/harp/86_2_1.m4a",
+    "audio/inst/harp/89_2_1.m4a",
+    "audio/inst/harp/93_2_1.m4a",
+    "audio/inst/harp/95_2_1.m4a",
+    "audio/inst/harp/98_3_1.m4a",
+    "audio/inst/harp/101_3_1.m4a"
+   ],
+   "samples": [
+    {
+     "f": "audio/inst/harp/28_3_1.m4a",
+     "n": 28,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/harp/31_1_1.m4a",
+     "n": 31,
+     "v": 0.333,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/harp/35_2_1.m4a",
+     "n": 35,
+     "v": 0.667,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/harp/38_2_1.m4a",
+     "n": 38,
+     "v": 0.667,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/harp/41_2_1.m4a",
+     "n": 41,
+     "v": 0.667,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/harp/45_2_1.m4a",
+     "n": 45,
+     "v": 0.667,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/harp/48_2_1.m4a",
+     "n": 48,
+     "v": 0.667,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/harp/52_2_1.m4a",
+     "n": 52,
+     "v": 0.667,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/harp/55_2_1.m4a",
+     "n": 55,
+     "v": 0.667,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/harp/59_2_1.m4a",
+     "n": 59,
+     "v": 0.667,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/harp/62_2_1.m4a",
+     "n": 62,
+     "v": 0.667,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/harp/65_2_1.m4a",
+     "n": 65,
+     "v": 0.667,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/harp/69_2_1.m4a",
+     "n": 69,
+     "v": 0.667,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/harp/72_2_1.m4a",
+     "n": 72,
+     "v": 0.667,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/harp/76_2_1.m4a",
+     "n": 76,
+     "v": 0.667,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/harp/79_2_1.m4a",
+     "n": 79,
+     "v": 0.667,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/harp/83_2_1.m4a",
+     "n": 83,
+     "v": 0.667,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/harp/86_2_1.m4a",
+     "n": 86,
+     "v": 0.667,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/harp/89_2_1.m4a",
+     "n": 89,
+     "v": 0.667,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/harp/93_2_1.m4a",
+     "n": 93,
+     "v": 0.667,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/harp/95_2_1.m4a",
+     "n": 95,
+     "v": 0.667,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/harp/98_3_1.m4a",
+     "n": 98,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/harp/101_3_1.m4a",
+     "n": 101,
+     "v": 1,
+     "r": 1
+    }
+   ]
+  },
+  "inst/hn_stac": {
+   "kind": "instrument",
+   "source": "vsco2ce",
+   "origin": "https://github.com/sgossner/VSCO-2-CE/tree/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/F%20Horn/stac",
+   "files": [
+    "audio/inst/hn_stac/36_1_1.m4a",
+    "audio/inst/hn_stac/39_1_1.m4a",
+    "audio/inst/hn_stac/43_1_1.m4a",
+    "audio/inst/hn_stac/46_1_1.m4a",
+    "audio/inst/hn_stac/46_2_1.m4a",
+    "audio/inst/hn_stac/50_1_1.m4a",
+    "audio/inst/hn_stac/50_2_1.m4a",
+    "audio/inst/hn_stac/53_1_1.m4a",
+    "audio/inst/hn_stac/53_2_1.m4a",
+    "audio/inst/hn_stac/57_1_1.m4a",
+    "audio/inst/hn_stac/57_2_1.m4a",
+    "audio/inst/hn_stac/60_1_1.m4a",
+    "audio/inst/hn_stac/60_2_1.m4a",
+    "audio/inst/hn_stac/74_1_1.m4a",
+    "audio/inst/hn_stac/74_2_1.m4a",
+    "audio/inst/hn_stac/77_1_1.m4a",
+    "audio/inst/hn_stac/77_2_1.m4a"
+   ],
+   "samples": [
+    {
+     "f": "audio/inst/hn_stac/36_1_1.m4a",
+     "n": 36,
+     "v": 0.5,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/hn_stac/39_1_1.m4a",
+     "n": 39,
+     "v": 0.5,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/hn_stac/43_1_1.m4a",
+     "n": 43,
+     "v": 0.5,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/hn_stac/46_1_1.m4a",
+     "n": 46,
+     "v": 0.5,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/hn_stac/46_2_1.m4a",
+     "n": 46,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/hn_stac/50_1_1.m4a",
+     "n": 50,
+     "v": 0.5,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/hn_stac/50_2_1.m4a",
+     "n": 50,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/hn_stac/53_1_1.m4a",
+     "n": 53,
+     "v": 0.5,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/hn_stac/53_2_1.m4a",
+     "n": 53,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/hn_stac/57_1_1.m4a",
+     "n": 57,
+     "v": 0.5,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/hn_stac/57_2_1.m4a",
+     "n": 57,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/hn_stac/60_1_1.m4a",
+     "n": 60,
+     "v": 0.5,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/hn_stac/60_2_1.m4a",
+     "n": 60,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/hn_stac/74_1_1.m4a",
+     "n": 74,
+     "v": 0.5,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/hn_stac/74_2_1.m4a",
+     "n": 74,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/hn_stac/77_1_1.m4a",
+     "n": 77,
+     "v": 0.5,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/hn_stac/77_2_1.m4a",
+     "n": 77,
+     "v": 1,
+     "r": 1
+    }
+   ]
+  },
+  "inst/hn_sus": {
+   "kind": "instrument",
+   "source": "vsco2ce",
+   "origin": "https://github.com/sgossner/VSCO-2-CE/tree/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/F%20Horn/sus",
+   "files": [
+    "audio/inst/hn_sus/33_1_1.m4a",
+    "audio/inst/hn_sus/36_1_1.m4a",
+    "audio/inst/hn_sus/36_2_1.m4a",
+    "audio/inst/hn_sus/39_1_1.m4a",
+    "audio/inst/hn_sus/39_2_1.m4a",
+    "audio/inst/hn_sus/43_1_1.m4a",
+    "audio/inst/hn_sus/43_2_1.m4a",
+    "audio/inst/hn_sus/46_1_1.m4a",
+    "audio/inst/hn_sus/46_2_1.m4a",
+    "audio/inst/hn_sus/50_1_1.m4a",
+    "audio/inst/hn_sus/50_2_1.m4a",
+    "audio/inst/hn_sus/53_1_1.m4a",
+    "audio/inst/hn_sus/53_2_1.m4a",
+    "audio/inst/hn_sus/57_1_1.m4a",
+    "audio/inst/hn_sus/57_2_1.m4a",
+    "audio/inst/hn_sus/60_1_1.m4a",
+    "audio/inst/hn_sus/60_2_1.m4a",
+    "audio/inst/hn_sus/74_1_1.m4a",
+    "audio/inst/hn_sus/77_1_1.m4a"
+   ],
+   "samples": [
+    {
+     "f": "audio/inst/hn_sus/33_1_1.m4a",
+     "n": 33,
+     "v": 0.5,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/hn_sus/36_1_1.m4a",
+     "n": 36,
+     "v": 0.5,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/hn_sus/36_2_1.m4a",
+     "n": 36,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/hn_sus/39_1_1.m4a",
+     "n": 39,
+     "v": 0.5,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/hn_sus/39_2_1.m4a",
+     "n": 39,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/hn_sus/43_1_1.m4a",
+     "n": 43,
+     "v": 0.5,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/hn_sus/43_2_1.m4a",
+     "n": 43,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/hn_sus/46_1_1.m4a",
+     "n": 46,
+     "v": 0.5,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/hn_sus/46_2_1.m4a",
+     "n": 46,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/hn_sus/50_1_1.m4a",
+     "n": 50,
+     "v": 0.5,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/hn_sus/50_2_1.m4a",
+     "n": 50,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/hn_sus/53_1_1.m4a",
+     "n": 53,
+     "v": 0.5,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/hn_sus/53_2_1.m4a",
+     "n": 53,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/hn_sus/57_1_1.m4a",
+     "n": 57,
+     "v": 0.5,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/hn_sus/57_2_1.m4a",
+     "n": 57,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/hn_sus/60_1_1.m4a",
+     "n": 60,
+     "v": 0.5,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/hn_sus/60_2_1.m4a",
+     "n": 60,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/hn_sus/74_1_1.m4a",
+     "n": 74,
+     "v": 0.5,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/hn_sus/77_1_1.m4a",
+     "n": 77,
+     "v": 0.5,
+     "r": 1
+    }
+   ]
+  },
+  "inst/koto": {
+   "kind": "instrument",
+   "source": "vcsl",
+   "origin": "https://github.com/sgossner/VCSL/tree/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Chordophones/Zithers/Dan%20Tranh/Normal",
+   "files": [
+    "audio/inst/koto/47_2_1.m4a",
+    "audio/inst/koto/49_2_1.m4a",
+    "audio/inst/koto/51_2_1.m4a",
+    "audio/inst/koto/54_2_1.m4a",
+    "audio/inst/koto/56_2_1.m4a",
+    "audio/inst/koto/59_1_1.m4a",
+    "audio/inst/koto/59_2_1.m4a",
+    "audio/inst/koto/61_2_1.m4a",
+    "audio/inst/koto/63_2_1.m4a",
+    "audio/inst/koto/66_2_1.m4a",
+    "audio/inst/koto/68_2_1.m4a",
+    "audio/inst/koto/71_2_1.m4a",
+    "audio/inst/koto/73_2_1.m4a",
+    "audio/inst/koto/75_2_1.m4a",
+    "audio/inst/koto/78_2_1.m4a",
+    "audio/inst/koto/80_2_1.m4a",
+    "audio/inst/koto/83_2_1.m4a"
+   ],
+   "samples": [
+    {
+     "f": "audio/inst/koto/47_2_1.m4a",
+     "n": 47,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/koto/49_2_1.m4a",
+     "n": 49,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/koto/51_2_1.m4a",
+     "n": 51,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/koto/54_2_1.m4a",
+     "n": 54,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/koto/56_2_1.m4a",
+     "n": 56,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/koto/59_1_1.m4a",
+     "n": 59,
+     "v": 0.5,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/koto/59_2_1.m4a",
+     "n": 59,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/koto/61_2_1.m4a",
+     "n": 61,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/koto/63_2_1.m4a",
+     "n": 63,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/koto/66_2_1.m4a",
+     "n": 66,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/koto/68_2_1.m4a",
+     "n": 68,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/koto/71_2_1.m4a",
+     "n": 71,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/koto/73_2_1.m4a",
+     "n": 73,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/koto/75_2_1.m4a",
+     "n": 75,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/koto/78_2_1.m4a",
+     "n": 78,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/koto/80_2_1.m4a",
+     "n": 80,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/koto/83_2_1.m4a",
+     "n": 83,
+     "v": 1,
+     "r": 1
+    }
+   ]
+  },
+  "inst/psaltery": {
+   "kind": "instrument",
+   "source": "vcsl",
+   "origin": "https://github.com/sgossner/VCSL/tree/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Chordophones/Zithers/Psaltery%2C%20Bowed%20and%20Plucked/LongBow",
+   "files": [
+    "audio/inst/psaltery/70_1_2.m4a",
+    "audio/inst/psaltery/72_1_1.m4a",
+    "audio/inst/psaltery/74_1_1.m4a",
+    "audio/inst/psaltery/76_1_2.m4a",
+    "audio/inst/psaltery/78_1_1.m4a",
+    "audio/inst/psaltery/80_1_1.m4a",
+    "audio/inst/psaltery/82_1_2.m4a",
+    "audio/inst/psaltery/84_1_1.m4a",
+    "audio/inst/psaltery/86_1_2.m4a",
+    "audio/inst/psaltery/88_1_2.m4a",
+    "audio/inst/psaltery/90_1_2.m4a"
+   ],
+   "samples": [
+    {
+     "f": "audio/inst/psaltery/70_1_2.m4a",
+     "n": 70,
+     "v": 1,
+     "r": 2
+    },
+    {
+     "f": "audio/inst/psaltery/72_1_1.m4a",
+     "n": 72,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/psaltery/74_1_1.m4a",
+     "n": 74,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/psaltery/76_1_2.m4a",
+     "n": 76,
+     "v": 1,
+     "r": 2
+    },
+    {
+     "f": "audio/inst/psaltery/78_1_1.m4a",
+     "n": 78,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/psaltery/80_1_1.m4a",
+     "n": 80,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/psaltery/82_1_2.m4a",
+     "n": 82,
+     "v": 1,
+     "r": 2
+    },
+    {
+     "f": "audio/inst/psaltery/84_1_1.m4a",
+     "n": 84,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/psaltery/86_1_2.m4a",
+     "n": 86,
+     "v": 1,
+     "r": 2
+    },
+    {
+     "f": "audio/inst/psaltery/88_1_2.m4a",
+     "n": 88,
+     "v": 1,
+     "r": 2
+    },
+    {
+     "f": "audio/inst/psaltery/90_1_2.m4a",
+     "n": 90,
+     "v": 1,
+     "r": 2
+    }
+   ]
+  },
+  "inst/tbn_sus": {
+   "kind": "instrument",
+   "source": "vsco2ce",
+   "origin": "https://github.com/sgossner/VSCO-2-CE/tree/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/Tenor%20Trombone/sus",
+   "files": [
+    "audio/inst/tbn_sus/39_1_1.m4a",
+    "audio/inst/tbn_sus/41_1_1.m4a",
+    "audio/inst/tbn_sus/46_1_1.m4a",
+    "audio/inst/tbn_sus/50_1_1.m4a",
+    "audio/inst/tbn_sus/53_1_1.m4a",
+    "audio/inst/tbn_sus/60_1_1.m4a",
+    "audio/inst/tbn_sus/61_1_1.m4a",
+    "audio/inst/tbn_sus/63_1_1.m4a",
+    "audio/inst/tbn_sus/65_1_1.m4a"
+   ],
+   "samples": [
+    {
+     "f": "audio/inst/tbn_sus/39_1_1.m4a",
+     "n": 39,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/tbn_sus/41_1_1.m4a",
+     "n": 41,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/tbn_sus/46_1_1.m4a",
+     "n": 46,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/tbn_sus/50_1_1.m4a",
+     "n": 50,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/tbn_sus/53_1_1.m4a",
+     "n": 53,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/tbn_sus/60_1_1.m4a",
+     "n": 60,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/tbn_sus/61_1_1.m4a",
+     "n": 61,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/tbn_sus/63_1_1.m4a",
+     "n": 63,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/tbn_sus/65_1_1.m4a",
+     "n": 65,
+     "v": 1,
+     "r": 1
+    }
+   ]
+  },
+  "inst/tuba_sus": {
+   "kind": "instrument",
+   "source": "vsco2ce",
+   "origin": "https://github.com/sgossner/VSCO-2-CE/tree/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/Tuba/sus",
+   "files": [
+    "audio/inst/tuba_sus/34_1_1.m4a",
+    "audio/inst/tuba_sus/39_1_1.m4a",
+    "audio/inst/tuba_sus/41_1_1.m4a",
+    "audio/inst/tuba_sus/46_1_1.m4a",
+    "audio/inst/tuba_sus/50_1_1.m4a",
+    "audio/inst/tuba_sus/53_1_1.m4a",
+    "audio/inst/tuba_sus/58_1_1.m4a"
+   ],
+   "samples": [
+    {
+     "f": "audio/inst/tuba_sus/34_1_1.m4a",
+     "n": 34,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/tuba_sus/39_1_1.m4a",
+     "n": 39,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/tuba_sus/41_1_1.m4a",
+     "n": 41,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/tuba_sus/46_1_1.m4a",
+     "n": 46,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/tuba_sus/50_1_1.m4a",
+     "n": 50,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/tuba_sus/53_1_1.m4a",
+     "n": 53,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/tuba_sus/58_1_1.m4a",
+     "n": 58,
+     "v": 1,
+     "r": 1
+    }
+   ]
+  },
+  "inst/vc_pizz": {
+   "kind": "instrument",
+   "source": "vsco2ce",
+   "origin": "https://github.com/sgossner/VSCO-2-CE/tree/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Cello%20Section/pizzT",
+   "files": [
+    "audio/inst/vc_pizz/36_1_1.m4a",
+    "audio/inst/vc_pizz/40_1_1.m4a",
+    "audio/inst/vc_pizz/43_1_1.m4a",
+    "audio/inst/vc_pizz/47_1_1.m4a",
+    "audio/inst/vc_pizz/50_1_1.m4a",
+    "audio/inst/vc_pizz/53_1_1.m4a",
+    "audio/inst/vc_pizz/57_1_1.m4a",
+    "audio/inst/vc_pizz/60_1_1.m4a",
+    "audio/inst/vc_pizz/64_1_1.m4a",
+    "audio/inst/vc_pizz/67_1_1.m4a",
+    "audio/inst/vc_pizz/71_1_1.m4a",
+    "audio/inst/vc_pizz/74_1_1.m4a",
+    "audio/inst/vc_pizz/77_1_1.m4a"
+   ],
+   "samples": [
+    {
+     "f": "audio/inst/vc_pizz/36_1_1.m4a",
+     "n": 36,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vc_pizz/40_1_1.m4a",
+     "n": 40,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vc_pizz/43_1_1.m4a",
+     "n": 43,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vc_pizz/47_1_1.m4a",
+     "n": 47,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vc_pizz/50_1_1.m4a",
+     "n": 50,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vc_pizz/53_1_1.m4a",
+     "n": 53,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vc_pizz/57_1_1.m4a",
+     "n": 57,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vc_pizz/60_1_1.m4a",
+     "n": 60,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vc_pizz/64_1_1.m4a",
+     "n": 64,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vc_pizz/67_1_1.m4a",
+     "n": 67,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vc_pizz/71_1_1.m4a",
+     "n": 71,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vc_pizz/74_1_1.m4a",
+     "n": 74,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vc_pizz/77_1_1.m4a",
+     "n": 77,
+     "v": 1,
+     "r": 1
+    }
+   ]
+  },
+  "inst/vc_spic": {
+   "kind": "instrument",
+   "source": "vsco2ce",
+   "origin": "https://github.com/sgossner/VSCO-2-CE/tree/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Cello%20Section/spic",
+   "files": [
+    "audio/inst/vc_spic/36_1_1.m4a",
+    "audio/inst/vc_spic/36_1_2.m4a",
+    "audio/inst/vc_spic/40_1_1.m4a",
+    "audio/inst/vc_spic/40_1_2.m4a",
+    "audio/inst/vc_spic/43_1_1.m4a",
+    "audio/inst/vc_spic/43_1_2.m4a",
+    "audio/inst/vc_spic/47_1_1.m4a",
+    "audio/inst/vc_spic/47_1_2.m4a",
+    "audio/inst/vc_spic/50_1_1.m4a",
+    "audio/inst/vc_spic/50_1_2.m4a",
+    "audio/inst/vc_spic/53_1_1.m4a",
+    "audio/inst/vc_spic/53_1_2.m4a",
+    "audio/inst/vc_spic/57_1_1.m4a",
+    "audio/inst/vc_spic/57_1_2.m4a",
+    "audio/inst/vc_spic/60_1_1.m4a",
+    "audio/inst/vc_spic/60_1_2.m4a",
+    "audio/inst/vc_spic/64_1_1.m4a",
+    "audio/inst/vc_spic/64_1_2.m4a",
+    "audio/inst/vc_spic/67_1_1.m4a",
+    "audio/inst/vc_spic/67_1_2.m4a",
+    "audio/inst/vc_spic/71_1_1.m4a",
+    "audio/inst/vc_spic/71_1_2.m4a",
+    "audio/inst/vc_spic/74_1_1.m4a",
+    "audio/inst/vc_spic/74_1_2.m4a",
+    "audio/inst/vc_spic/77_1_1.m4a",
+    "audio/inst/vc_spic/77_1_2.m4a"
+   ],
+   "samples": [
+    {
+     "f": "audio/inst/vc_spic/36_1_1.m4a",
+     "n": 36,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vc_spic/36_1_2.m4a",
+     "n": 36,
+     "v": 1,
+     "r": 2
+    },
+    {
+     "f": "audio/inst/vc_spic/40_1_1.m4a",
+     "n": 40,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vc_spic/40_1_2.m4a",
+     "n": 40,
+     "v": 1,
+     "r": 2
+    },
+    {
+     "f": "audio/inst/vc_spic/43_1_1.m4a",
+     "n": 43,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vc_spic/43_1_2.m4a",
+     "n": 43,
+     "v": 1,
+     "r": 2
+    },
+    {
+     "f": "audio/inst/vc_spic/47_1_1.m4a",
+     "n": 47,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vc_spic/47_1_2.m4a",
+     "n": 47,
+     "v": 1,
+     "r": 2
+    },
+    {
+     "f": "audio/inst/vc_spic/50_1_1.m4a",
+     "n": 50,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vc_spic/50_1_2.m4a",
+     "n": 50,
+     "v": 1,
+     "r": 2
+    },
+    {
+     "f": "audio/inst/vc_spic/53_1_1.m4a",
+     "n": 53,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vc_spic/53_1_2.m4a",
+     "n": 53,
+     "v": 1,
+     "r": 2
+    },
+    {
+     "f": "audio/inst/vc_spic/57_1_1.m4a",
+     "n": 57,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vc_spic/57_1_2.m4a",
+     "n": 57,
+     "v": 1,
+     "r": 2
+    },
+    {
+     "f": "audio/inst/vc_spic/60_1_1.m4a",
+     "n": 60,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vc_spic/60_1_2.m4a",
+     "n": 60,
+     "v": 1,
+     "r": 2
+    },
+    {
+     "f": "audio/inst/vc_spic/64_1_1.m4a",
+     "n": 64,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vc_spic/64_1_2.m4a",
+     "n": 64,
+     "v": 1,
+     "r": 2
+    },
+    {
+     "f": "audio/inst/vc_spic/67_1_1.m4a",
+     "n": 67,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vc_spic/67_1_2.m4a",
+     "n": 67,
+     "v": 1,
+     "r": 2
+    },
+    {
+     "f": "audio/inst/vc_spic/71_1_1.m4a",
+     "n": 71,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vc_spic/71_1_2.m4a",
+     "n": 71,
+     "v": 1,
+     "r": 2
+    },
+    {
+     "f": "audio/inst/vc_spic/74_1_1.m4a",
+     "n": 74,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vc_spic/74_1_2.m4a",
+     "n": 74,
+     "v": 1,
+     "r": 2
+    },
+    {
+     "f": "audio/inst/vc_spic/77_1_1.m4a",
+     "n": 77,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vc_spic/77_1_2.m4a",
+     "n": 77,
+     "v": 1,
+     "r": 2
+    }
+   ]
+  },
+  "inst/vc_sus": {
+   "kind": "instrument",
+   "source": "vsco2ce",
+   "origin": "https://github.com/sgossner/VSCO-2-CE/tree/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Cello%20Section/susvib",
+   "files": [
+    "audio/inst/vc_sus/36_1_1.m4a",
+    "audio/inst/vc_sus/36_2_1.m4a",
+    "audio/inst/vc_sus/40_1_1.m4a",
+    "audio/inst/vc_sus/40_2_1.m4a",
+    "audio/inst/vc_sus/43_1_1.m4a",
+    "audio/inst/vc_sus/43_2_1.m4a",
+    "audio/inst/vc_sus/47_1_1.m4a",
+    "audio/inst/vc_sus/47_2_1.m4a",
+    "audio/inst/vc_sus/50_1_1.m4a",
+    "audio/inst/vc_sus/50_2_1.m4a",
+    "audio/inst/vc_sus/53_1_1.m4a",
+    "audio/inst/vc_sus/53_2_1.m4a",
+    "audio/inst/vc_sus/57_1_1.m4a",
+    "audio/inst/vc_sus/57_2_1.m4a",
+    "audio/inst/vc_sus/60_1_1.m4a",
+    "audio/inst/vc_sus/60_2_1.m4a",
+    "audio/inst/vc_sus/64_1_1.m4a",
+    "audio/inst/vc_sus/64_2_1.m4a",
+    "audio/inst/vc_sus/67_1_1.m4a",
+    "audio/inst/vc_sus/67_2_1.m4a",
+    "audio/inst/vc_sus/71_1_1.m4a",
+    "audio/inst/vc_sus/71_2_1.m4a",
+    "audio/inst/vc_sus/74_1_1.m4a",
+    "audio/inst/vc_sus/74_2_1.m4a",
+    "audio/inst/vc_sus/77_1_1.m4a",
+    "audio/inst/vc_sus/77_2_1.m4a"
+   ],
+   "samples": [
+    {
+     "f": "audio/inst/vc_sus/36_1_1.m4a",
+     "n": 36,
+     "v": 0.5,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vc_sus/36_2_1.m4a",
+     "n": 36,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vc_sus/40_1_1.m4a",
+     "n": 40,
+     "v": 0.5,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vc_sus/40_2_1.m4a",
+     "n": 40,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vc_sus/43_1_1.m4a",
+     "n": 43,
+     "v": 0.5,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vc_sus/43_2_1.m4a",
+     "n": 43,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vc_sus/47_1_1.m4a",
+     "n": 47,
+     "v": 0.5,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vc_sus/47_2_1.m4a",
+     "n": 47,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vc_sus/50_1_1.m4a",
+     "n": 50,
+     "v": 0.5,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vc_sus/50_2_1.m4a",
+     "n": 50,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vc_sus/53_1_1.m4a",
+     "n": 53,
+     "v": 0.5,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vc_sus/53_2_1.m4a",
+     "n": 53,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vc_sus/57_1_1.m4a",
+     "n": 57,
+     "v": 0.5,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vc_sus/57_2_1.m4a",
+     "n": 57,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vc_sus/60_1_1.m4a",
+     "n": 60,
+     "v": 0.5,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vc_sus/60_2_1.m4a",
+     "n": 60,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vc_sus/64_1_1.m4a",
+     "n": 64,
+     "v": 0.5,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vc_sus/64_2_1.m4a",
+     "n": 64,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vc_sus/67_1_1.m4a",
+     "n": 67,
+     "v": 0.5,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vc_sus/67_2_1.m4a",
+     "n": 67,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vc_sus/71_1_1.m4a",
+     "n": 71,
+     "v": 0.5,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vc_sus/71_2_1.m4a",
+     "n": 71,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vc_sus/74_1_1.m4a",
+     "n": 74,
+     "v": 0.5,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vc_sus/74_2_1.m4a",
+     "n": 74,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vc_sus/77_1_1.m4a",
+     "n": 77,
+     "v": 0.5,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vc_sus/77_2_1.m4a",
+     "n": 77,
+     "v": 1,
+     "r": 1
+    }
+   ]
+  },
+  "inst/vc_trem": {
+   "kind": "instrument",
+   "source": "vsco2ce",
+   "origin": "https://github.com/sgossner/VSCO-2-CE/tree/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Cello%20Section/trem",
+   "files": [
+    "audio/inst/vc_trem/36_1_1.m4a",
+    "audio/inst/vc_trem/40_1_1.m4a",
+    "audio/inst/vc_trem/43_1_1.m4a",
+    "audio/inst/vc_trem/50_1_1.m4a",
+    "audio/inst/vc_trem/53_1_1.m4a",
+    "audio/inst/vc_trem/57_1_1.m4a",
+    "audio/inst/vc_trem/59_1_1.m4a",
+    "audio/inst/vc_trem/60_1_1.m4a",
+    "audio/inst/vc_trem/64_1_1.m4a",
+    "audio/inst/vc_trem/67_1_1.m4a",
+    "audio/inst/vc_trem/71_1_1.m4a",
+    "audio/inst/vc_trem/74_1_1.m4a",
+    "audio/inst/vc_trem/77_1_1.m4a"
+   ],
+   "samples": [
+    {
+     "f": "audio/inst/vc_trem/36_1_1.m4a",
+     "n": 36,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vc_trem/40_1_1.m4a",
+     "n": 40,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vc_trem/43_1_1.m4a",
+     "n": 43,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vc_trem/50_1_1.m4a",
+     "n": 50,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vc_trem/53_1_1.m4a",
+     "n": 53,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vc_trem/57_1_1.m4a",
+     "n": 57,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vc_trem/59_1_1.m4a",
+     "n": 59,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vc_trem/60_1_1.m4a",
+     "n": 60,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vc_trem/64_1_1.m4a",
+     "n": 64,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vc_trem/67_1_1.m4a",
+     "n": 67,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vc_trem/71_1_1.m4a",
+     "n": 71,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vc_trem/74_1_1.m4a",
+     "n": 74,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vc_trem/77_1_1.m4a",
+     "n": 77,
+     "v": 1,
+     "r": 1
+    }
+   ]
+  },
+  "inst/vla_sus": {
+   "kind": "instrument",
+   "source": "vsco2ce",
+   "origin": "https://github.com/sgossner/VSCO-2-CE/tree/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Viola%20Section/susvib",
+   "files": [
+    "audio/inst/vla_sus/48_1_1.m4a",
+    "audio/inst/vla_sus/50_1_1.m4a",
+    "audio/inst/vla_sus/52_1_1.m4a",
+    "audio/inst/vla_sus/55_1_1.m4a",
+    "audio/inst/vla_sus/59_1_1.m4a",
+    "audio/inst/vla_sus/62_1_1.m4a",
+    "audio/inst/vla_sus/65_1_1.m4a",
+    "audio/inst/vla_sus/69_1_1.m4a",
+    "audio/inst/vla_sus/72_1_1.m4a",
+    "audio/inst/vla_sus/76_1_1.m4a",
+    "audio/inst/vla_sus/79_1_1.m4a",
+    "audio/inst/vla_sus/83_1_1.m4a",
+    "audio/inst/vla_sus/86_1_1.m4a"
+   ],
+   "samples": [
+    {
+     "f": "audio/inst/vla_sus/48_1_1.m4a",
+     "n": 48,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vla_sus/50_1_1.m4a",
+     "n": 50,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vla_sus/52_1_1.m4a",
+     "n": 52,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vla_sus/55_1_1.m4a",
+     "n": 55,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vla_sus/59_1_1.m4a",
+     "n": 59,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vla_sus/62_1_1.m4a",
+     "n": 62,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vla_sus/65_1_1.m4a",
+     "n": 65,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vla_sus/69_1_1.m4a",
+     "n": 69,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vla_sus/72_1_1.m4a",
+     "n": 72,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vla_sus/76_1_1.m4a",
+     "n": 76,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vla_sus/79_1_1.m4a",
+     "n": 79,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vla_sus/83_1_1.m4a",
+     "n": 83,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vla_sus/86_1_1.m4a",
+     "n": 86,
+     "v": 1,
+     "r": 1
+    }
+   ]
+  },
+  "inst/vln_pizz": {
+   "kind": "instrument",
+   "source": "vsco2ce",
+   "origin": "https://github.com/sgossner/VSCO-2-CE/tree/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/Pizz",
+   "files": [
+    "audio/inst/vln_pizz/55_1_1.m4a",
+    "audio/inst/vln_pizz/57_1_1.m4a",
+    "audio/inst/vln_pizz/59_1_1.m4a",
+    "audio/inst/vln_pizz/62_1_1.m4a",
+    "audio/inst/vln_pizz/66_1_1.m4a",
+    "audio/inst/vln_pizz/69_1_1.m4a",
+    "audio/inst/vln_pizz/72_1_1.m4a",
+    "audio/inst/vln_pizz/76_1_1.m4a",
+    "audio/inst/vln_pizz/79_1_1.m4a",
+    "audio/inst/vln_pizz/83_1_1.m4a",
+    "audio/inst/vln_pizz/86_1_1.m4a"
+   ],
+   "samples": [
+    {
+     "f": "audio/inst/vln_pizz/55_1_1.m4a",
+     "n": 55,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vln_pizz/57_1_1.m4a",
+     "n": 57,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vln_pizz/59_1_1.m4a",
+     "n": 59,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vln_pizz/62_1_1.m4a",
+     "n": 62,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vln_pizz/66_1_1.m4a",
+     "n": 66,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vln_pizz/69_1_1.m4a",
+     "n": 69,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vln_pizz/72_1_1.m4a",
+     "n": 72,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vln_pizz/76_1_1.m4a",
+     "n": 76,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vln_pizz/79_1_1.m4a",
+     "n": 79,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vln_pizz/83_1_1.m4a",
+     "n": 83,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vln_pizz/86_1_1.m4a",
+     "n": 86,
+     "v": 1,
+     "r": 1
+    }
+   ]
+  },
+  "inst/vln_spic": {
+   "kind": "instrument",
+   "source": "vsco2ce",
+   "origin": "https://github.com/sgossner/VSCO-2-CE/tree/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/Spic",
+   "files": [
+    "audio/inst/vln_spic/55_1_1.m4a",
+    "audio/inst/vln_spic/55_1_2.m4a",
+    "audio/inst/vln_spic/57_1_1.m4a",
+    "audio/inst/vln_spic/57_1_2.m4a",
+    "audio/inst/vln_spic/59_1_1.m4a",
+    "audio/inst/vln_spic/59_1_2.m4a",
+    "audio/inst/vln_spic/62_1_1.m4a",
+    "audio/inst/vln_spic/62_1_2.m4a",
+    "audio/inst/vln_spic/66_1_1.m4a",
+    "audio/inst/vln_spic/66_1_2.m4a",
+    "audio/inst/vln_spic/69_1_1.m4a",
+    "audio/inst/vln_spic/69_1_2.m4a",
+    "audio/inst/vln_spic/72_1_1.m4a",
+    "audio/inst/vln_spic/72_1_2.m4a",
+    "audio/inst/vln_spic/76_1_1.m4a",
+    "audio/inst/vln_spic/76_1_2.m4a",
+    "audio/inst/vln_spic/79_1_1.m4a",
+    "audio/inst/vln_spic/79_1_2.m4a",
+    "audio/inst/vln_spic/83_1_1.m4a",
+    "audio/inst/vln_spic/83_1_2.m4a",
+    "audio/inst/vln_spic/86_1_1.m4a",
+    "audio/inst/vln_spic/86_1_2.m4a"
+   ],
+   "samples": [
+    {
+     "f": "audio/inst/vln_spic/55_1_1.m4a",
+     "n": 55,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vln_spic/55_1_2.m4a",
+     "n": 55,
+     "v": 1,
+     "r": 2
+    },
+    {
+     "f": "audio/inst/vln_spic/57_1_1.m4a",
+     "n": 57,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vln_spic/57_1_2.m4a",
+     "n": 57,
+     "v": 1,
+     "r": 2
+    },
+    {
+     "f": "audio/inst/vln_spic/59_1_1.m4a",
+     "n": 59,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vln_spic/59_1_2.m4a",
+     "n": 59,
+     "v": 1,
+     "r": 2
+    },
+    {
+     "f": "audio/inst/vln_spic/62_1_1.m4a",
+     "n": 62,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vln_spic/62_1_2.m4a",
+     "n": 62,
+     "v": 1,
+     "r": 2
+    },
+    {
+     "f": "audio/inst/vln_spic/66_1_1.m4a",
+     "n": 66,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vln_spic/66_1_2.m4a",
+     "n": 66,
+     "v": 1,
+     "r": 2
+    },
+    {
+     "f": "audio/inst/vln_spic/69_1_1.m4a",
+     "n": 69,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vln_spic/69_1_2.m4a",
+     "n": 69,
+     "v": 1,
+     "r": 2
+    },
+    {
+     "f": "audio/inst/vln_spic/72_1_1.m4a",
+     "n": 72,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vln_spic/72_1_2.m4a",
+     "n": 72,
+     "v": 1,
+     "r": 2
+    },
+    {
+     "f": "audio/inst/vln_spic/76_1_1.m4a",
+     "n": 76,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vln_spic/76_1_2.m4a",
+     "n": 76,
+     "v": 1,
+     "r": 2
+    },
+    {
+     "f": "audio/inst/vln_spic/79_1_1.m4a",
+     "n": 79,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vln_spic/79_1_2.m4a",
+     "n": 79,
+     "v": 1,
+     "r": 2
+    },
+    {
+     "f": "audio/inst/vln_spic/83_1_1.m4a",
+     "n": 83,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vln_spic/83_1_2.m4a",
+     "n": 83,
+     "v": 1,
+     "r": 2
+    },
+    {
+     "f": "audio/inst/vln_spic/86_1_1.m4a",
+     "n": 86,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vln_spic/86_1_2.m4a",
+     "n": 86,
+     "v": 1,
+     "r": 2
+    }
+   ]
+  },
+  "inst/vln_sus": {
+   "kind": "instrument",
+   "source": "vsco2ce",
+   "origin": "https://github.com/sgossner/VSCO-2-CE/tree/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/susVib",
+   "files": [
+    "audio/inst/vln_sus/55_1_1.m4a",
+    "audio/inst/vln_sus/55_2_1.m4a",
+    "audio/inst/vln_sus/57_1_1.m4a",
+    "audio/inst/vln_sus/57_2_1.m4a",
+    "audio/inst/vln_sus/59_1_1.m4a",
+    "audio/inst/vln_sus/59_2_1.m4a",
+    "audio/inst/vln_sus/62_1_1.m4a",
+    "audio/inst/vln_sus/62_2_1.m4a",
+    "audio/inst/vln_sus/66_1_1.m4a",
+    "audio/inst/vln_sus/66_2_1.m4a",
+    "audio/inst/vln_sus/69_1_1.m4a",
+    "audio/inst/vln_sus/69_2_1.m4a",
+    "audio/inst/vln_sus/72_1_1.m4a",
+    "audio/inst/vln_sus/72_2_1.m4a",
+    "audio/inst/vln_sus/76_1_1.m4a",
+    "audio/inst/vln_sus/76_2_1.m4a",
+    "audio/inst/vln_sus/79_1_1.m4a",
+    "audio/inst/vln_sus/79_2_1.m4a",
+    "audio/inst/vln_sus/83_1_1.m4a",
+    "audio/inst/vln_sus/83_2_1.m4a",
+    "audio/inst/vln_sus/86_1_1.m4a",
+    "audio/inst/vln_sus/86_2_1.m4a"
+   ],
+   "samples": [
+    {
+     "f": "audio/inst/vln_sus/55_1_1.m4a",
+     "n": 55,
+     "v": 0.5,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vln_sus/55_2_1.m4a",
+     "n": 55,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vln_sus/57_1_1.m4a",
+     "n": 57,
+     "v": 0.5,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vln_sus/57_2_1.m4a",
+     "n": 57,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vln_sus/59_1_1.m4a",
+     "n": 59,
+     "v": 0.5,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vln_sus/59_2_1.m4a",
+     "n": 59,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vln_sus/62_1_1.m4a",
+     "n": 62,
+     "v": 0.5,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vln_sus/62_2_1.m4a",
+     "n": 62,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vln_sus/66_1_1.m4a",
+     "n": 66,
+     "v": 0.5,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vln_sus/66_2_1.m4a",
+     "n": 66,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vln_sus/69_1_1.m4a",
+     "n": 69,
+     "v": 0.5,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vln_sus/69_2_1.m4a",
+     "n": 69,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vln_sus/72_1_1.m4a",
+     "n": 72,
+     "v": 0.5,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vln_sus/72_2_1.m4a",
+     "n": 72,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vln_sus/76_1_1.m4a",
+     "n": 76,
+     "v": 0.5,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vln_sus/76_2_1.m4a",
+     "n": 76,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vln_sus/79_1_1.m4a",
+     "n": 79,
+     "v": 0.5,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vln_sus/79_2_1.m4a",
+     "n": 79,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vln_sus/83_1_1.m4a",
+     "n": 83,
+     "v": 0.5,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vln_sus/83_2_1.m4a",
+     "n": 83,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vln_sus/86_1_1.m4a",
+     "n": 86,
+     "v": 0.5,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vln_sus/86_2_1.m4a",
+     "n": 86,
+     "v": 1,
+     "r": 1
+    }
+   ]
+  },
+  "inst/vln_trem": {
+   "kind": "instrument",
+   "source": "vsco2ce",
+   "origin": "https://github.com/sgossner/VSCO-2-CE/tree/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/Trem",
+   "files": [
+    "audio/inst/vln_trem/55_1_1.m4a",
+    "audio/inst/vln_trem/57_1_1.m4a",
+    "audio/inst/vln_trem/59_1_1.m4a",
+    "audio/inst/vln_trem/62_1_1.m4a",
+    "audio/inst/vln_trem/69_1_1.m4a",
+    "audio/inst/vln_trem/72_1_1.m4a",
+    "audio/inst/vln_trem/76_1_1.m4a",
+    "audio/inst/vln_trem/79_1_1.m4a",
+    "audio/inst/vln_trem/83_1_1.m4a",
+    "audio/inst/vln_trem/86_1_1.m4a"
+   ],
+   "samples": [
+    {
+     "f": "audio/inst/vln_trem/55_1_1.m4a",
+     "n": 55,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vln_trem/57_1_1.m4a",
+     "n": 57,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vln_trem/59_1_1.m4a",
+     "n": 59,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vln_trem/62_1_1.m4a",
+     "n": 62,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vln_trem/69_1_1.m4a",
+     "n": 69,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vln_trem/72_1_1.m4a",
+     "n": 72,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vln_trem/76_1_1.m4a",
+     "n": 76,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vln_trem/79_1_1.m4a",
+     "n": 79,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vln_trem/83_1_1.m4a",
+     "n": 83,
+     "v": 1,
+     "r": 1
+    },
+    {
+     "f": "audio/inst/vln_trem/86_1_1.m4a",
+     "n": 86,
+     "v": 1,
+     "r": 1
+    }
+   ]
+  },
+  "model/antique_katana_01": {
+   "kind": "model",
+   "source": "polyhaven",
+   "origin": "https://polyhaven.com/a/antique_katana_01",
+   "author": "Tal Swicegood",
+   "files": [
+    "models/antique_katana_01.glb"
+   ],
+   "tris": 3000
+  },
+  "model/arrows_stuck": {
+   "kind": "model",
+   "source": "original",
+   "origin": "scripts/blender/export/arrows_stuck.glb",
+   "files": [
+    "models/arrows_stuck.glb"
+   ],
+   "tris": 180
+  },
+  "model/banner_torn": {
+   "kind": "model",
+   "source": "original",
+   "origin": "scripts/blender/export/banner_torn.glb",
+   "files": [
+    "models/banner_torn.glb"
+   ],
+   "tris": 128
+  },
+  "model/barrel_03": {
+   "kind": "model",
+   "source": "polyhaven",
+   "origin": "https://polyhaven.com/a/barrel_03",
+   "author": "Serhii Khromov",
+   "files": [
+    "models/barrel_03.glb"
+   ],
+   "tris": 1473
+  },
+  "model/ceramic_vase_01": {
+   "kind": "model",
+   "source": "polyhaven",
+   "origin": "https://polyhaven.com/a/ceramic_vase_01",
+   "author": "James Ray Cock",
+   "files": [
+    "models/ceramic_vase_01.glb"
+   ],
+   "tris": 4848
+  },
+  "model/dead_tree_trunk": {
+   "kind": "model",
+   "source": "polyhaven",
+   "origin": "https://polyhaven.com/a/dead_tree_trunk",
+   "author": "Rob Tuytel",
+   "files": [
+    "models/dead_tree_trunk.glb"
+   ],
+   "tris": 4990
+  },
+  "model/fence_broken": {
+   "kind": "model",
+   "source": "original",
+   "origin": "scripts/blender/export/fence_broken.glb",
+   "files": [
+    "models/fence_broken.glb"
+   ],
+   "tris": 252
+  },
+  "model/fern_02": {
+   "kind": "model",
+   "source": "polyhaven",
+   "origin": "https://polyhaven.com/a/fern_02",
+   "author": "Rob Tuytel, Rico Cilliers",
+   "files": [
+    "models/fern_02.glb"
+   ],
+   "tris": 6232
+  },
+  "model/jizo": {
+   "kind": "model",
+   "source": "original",
+   "origin": "scripts/blender/export/jizo.glb",
+   "files": [
+    "models/jizo.glb"
+   ],
+   "tris": 266
+  },
+  "model/katana_stand_01": {
+   "kind": "model",
+   "source": "polyhaven",
+   "origin": "https://polyhaven.com/a/katana_stand_01",
+   "author": "Rico Cilliers",
+   "files": [
+    "models/katana_stand_01.glb"
+   ],
+   "tris": 1498
+  },
+  "model/katana_stuck": {
+   "kind": "model",
+   "source": "original",
+   "origin": "scripts/blender/export/katana_stuck.glb",
+   "files": [
+    "models/katana_stuck.glb"
+   ],
+   "tris": 118
+  },
+  "model/moon_rock_01": {
+   "kind": "model",
+   "source": "polyhaven",
+   "origin": "https://polyhaven.com/a/moon_rock_01",
+   "author": "Greg Zaal, Rico Cilliers, Jenelle van Heerden, Dario Barresi",
+   "files": [
+    "models/moon_rock_01.glb"
+   ],
+   "tris": 5226
+  },
+  "model/rock_07": {
+   "kind": "model",
+   "source": "polyhaven",
+   "origin": "https://polyhaven.com/a/rock_07",
+   "author": "Jenelle van Heerden",
+   "files": [
+    "models/rock_07.glb"
+   ],
+   "tris": 800
+  },
+  "model/rock_09": {
+   "kind": "model",
+   "source": "polyhaven",
+   "origin": "https://polyhaven.com/a/rock_09",
+   "author": "Jenelle van Heerden",
+   "files": [
+    "models/rock_09.glb"
+   ],
+   "tris": 798
+  },
+  "model/rock_moss_set_01": {
+   "kind": "model",
+   "source": "polyhaven",
+   "origin": "https://polyhaven.com/a/rock_moss_set_01",
+   "author": "Kless Gyzen",
+   "files": [
+    "models/rock_moss_set_01.glb"
+   ],
+   "tris": 4002
+  },
+  "model/root_cluster_01": {
+   "kind": "model",
+   "source": "polyhaven",
+   "origin": "https://polyhaven.com/a/root_cluster_01",
+   "author": "Jenelle van Heerden, Rico Cilliers",
+   "files": [
+    "models/root_cluster_01.glb"
+   ],
+   "tris": 5988
+  },
+  "model/sotoba": {
+   "kind": "model",
+   "source": "original",
+   "origin": "scripts/blender/export/sotoba.glb",
+   "files": [
+    "models/sotoba.glb"
+   ],
+   "tris": 420
+  },
+  "model/spear_stuck": {
+   "kind": "model",
+   "source": "original",
+   "origin": "scripts/blender/export/spear_stuck.glb",
+   "files": [
+    "models/spear_stuck.glb"
+   ],
+   "tris": 64
+  },
+  "model/stone_fire_pit": {
+   "kind": "model",
+   "source": "polyhaven",
+   "origin": "https://polyhaven.com/a/stone_fire_pit",
+   "author": "Sebastian Platen",
+   "files": [
+    "models/stone_fire_pit.glb"
+   ],
+   "tris": 2500
+  },
+  "model/timber_support": {
+   "kind": "model",
+   "source": "original",
+   "origin": "scripts/blender/export/timber_support.glb",
+   "files": [
+    "models/timber_support.glb"
+   ],
+   "tris": 336
+  },
+  "model/torii_fallen": {
+   "kind": "model",
+   "source": "original",
+   "origin": "scripts/blender/export/torii_fallen.glb",
+   "files": [
+    "models/torii_fallen.glb"
+   ],
+   "tris": 428
+  },
+  "model/treasure_chest": {
+   "kind": "model",
+   "source": "polyhaven",
+   "origin": "https://polyhaven.com/a/treasure_chest",
+   "author": "Rico Cilliers",
+   "files": [
+    "models/treasure_chest.glb"
+   ],
+   "tris": 5307
+  },
+  "model/tree_stump_01": {
+   "kind": "model",
+   "source": "polyhaven",
+   "origin": "https://polyhaven.com/a/tree_stump_01",
+   "author": "Rob Tuytel",
+   "files": [
+    "models/tree_stump_01.glb"
+   ],
+   "tris": 2499
+  },
+  "model/wicker_basket_01": {
+   "kind": "model",
+   "source": "polyhaven",
+   "origin": "https://polyhaven.com/a/wicker_basket_01",
+   "author": "Kuutti Siitonen",
+   "files": [
+    "models/wicker_basket_01.glb"
+   ],
+   "tris": 1380
+  },
+  "model/wooden_bucket_01": {
+   "kind": "model",
+   "source": "polyhaven",
+   "origin": "https://polyhaven.com/a/wooden_bucket_01",
+   "author": "James Ray Cock",
+   "files": [
+    "models/wooden_bucket_01.glb"
+   ],
+   "tris": 1199
+  },
+  "model/wooden_crate_01": {
+   "kind": "model",
+   "source": "polyhaven",
+   "origin": "https://polyhaven.com/a/wooden_crate_01",
+   "author": "James Ray Cock",
+   "files": [
+    "models/wooden_crate_01.glb"
+   ],
+   "tris": 1200
+  },
+  "model/wooden_lantern_01": {
+   "kind": "model",
+   "source": "polyhaven",
+   "origin": "https://polyhaven.com/a/wooden_lantern_01",
+   "author": "James Ray Cock",
+   "files": [
+    "models/wooden_lantern_01.glb"
+   ],
+   "tris": 2532
+  },
+  "perc/bdrum_ff": {
+   "kind": "percussion",
+   "source": "vcsl",
+   "origin": "https://github.com/sgossner/VCSL/tree/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Membranophones/Struck%20Membranophones/Bass%20Drum%201/BDrumNew_hit_v7_rr1_Sum.wav",
+   "files": [
+    "audio/perc/bdrum_ff.m4a"
+   ]
+  },
+  "perc/bdrum_mf": {
+   "kind": "percussion",
+   "source": "vcsl",
+   "origin": "https://github.com/sgossner/VCSL/tree/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Membranophones/Struck%20Membranophones/Bass%20Drum%201/BDrumNew_hit_v3_rr1_Sum.wav",
+   "files": [
+    "audio/perc/bdrum_mf.m4a"
+   ]
+  },
+  "perc/bowl": {
+   "kind": "percussion",
+   "source": "vcsl",
+   "origin": "https://github.com/sgossner/VCSL/tree/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Hand%20Bells%2C%20Nepalese/HB_1.wav",
+   "files": [
+    "audio/perc/bowl.m4a"
+   ]
+  },
+  "perc/clapper": {
+   "kind": "percussion",
+   "source": "vcsl",
+   "origin": "https://github.com/sgossner/VCSL/tree/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Claves/Claves1_Hit_v3_rr1_Mid.wav",
+   "files": [
+    "audio/perc/clapper.m4a"
+   ]
+  },
+  "perc/crash": {
+   "kind": "percussion",
+   "source": "vsco2ce",
+   "origin": "https://github.com/sgossner/VSCO-2-CE/tree/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/varMetal/Cymbals/clash/crash_hit_ff_loose.wav",
+   "files": [
+    "audio/perc/crash.m4a"
+   ]
+  },
+  "perc/cym_scrape": {
+   "kind": "percussion",
+   "source": "vsco2ce",
+   "origin": "https://github.com/sgossner/VSCO-2-CE/tree/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/varMetal/Cymbals/susp/susp_FX_scrape_1.wav",
+   "files": [
+    "audio/perc/cym_scrape.m4a"
+   ]
+  },
+  "perc/cym_soft": {
+   "kind": "percussion",
+   "source": "vsco2ce",
+   "origin": "https://github.com/sgossner/VSCO-2-CE/tree/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/varMetal/Cymbals/susp/susp_hit_softmall_f.wav",
+   "files": [
+    "audio/perc/cym_soft.m4a"
+   ]
+  },
+  "perc/cym_swell": {
+   "kind": "percussion",
+   "source": "vsco2ce",
+   "origin": "https://github.com/sgossner/VSCO-2-CE/tree/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/varMetal/Cymbals/susp/susp_hit_softmall_roll2_cresc.wav",
+   "files": [
+    "audio/perc/cym_swell.m4a"
+   ]
+  },
+  "perc/frame_hi": {
+   "kind": "percussion",
+   "source": "vcsl",
+   "origin": "https://github.com/sgossner/VCSL/tree/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Membranophones/Struck%20Membranophones/Frame%20Drum/HDrumS_Hit_v3_rr1_Sum.wav",
+   "files": [
+    "audio/perc/frame_hi.m4a"
+   ]
+  },
+  "perc/frame_lo": {
+   "kind": "percussion",
+   "source": "vcsl",
+   "origin": "https://github.com/sgossner/VCSL/tree/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Membranophones/Struck%20Membranophones/Frame%20Drum/HDrumL_Hit_v3_rr1_Sum.wav",
+   "files": [
+    "audio/perc/frame_lo.m4a"
+   ]
+  },
+  "perc/gong_ff": {
+   "kind": "percussion",
+   "source": "vsco2ce",
+   "origin": "https://github.com/sgossner/VSCO-2-CE/tree/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/varMetal/Gong/gong_hit_ff.wav",
+   "files": [
+    "audio/perc/gong_ff.m4a"
+   ]
+  },
+  "perc/gong_mp": {
+   "kind": "percussion",
+   "source": "vsco2ce",
+   "origin": "https://github.com/sgossner/VSCO-2-CE/tree/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/varMetal/Gong/gong_hit_mp.wav",
+   "files": [
+    "audio/perc/gong_mp.m4a"
+   ]
+  },
+  "perc/gong_roll": {
+   "kind": "percussion",
+   "source": "vsco2ce",
+   "origin": "https://github.com/sgossner/VSCO-2-CE/tree/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/varMetal/Gong/gong_roll_medium_f.wav",
+   "files": [
+    "audio/perc/gong_roll.m4a"
+   ]
+  },
+  "perc/gong_scrape": {
+   "kind": "percussion",
+   "source": "vsco2ce",
+   "origin": "https://github.com/sgossner/VSCO-2-CE/tree/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/varMetal/Gong/gong_scrape_1.wav",
+   "files": [
+    "audio/perc/gong_scrape.m4a"
+   ]
+  },
+  "perc/log_hi": {
+   "kind": "percussion",
+   "source": "vcsl",
+   "origin": "https://github.com/sgossner/VCSL/tree/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Slit%20Drum/LogDrumHi_MedM_v2_rr1_Sum.wav",
+   "files": [
+    "audio/perc/log_hi.m4a"
+   ]
+  },
+  "perc/log_lo": {
+   "kind": "percussion",
+   "source": "vcsl",
+   "origin": "https://github.com/sgossner/VCSL/tree/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Slit%20Drum/LogDrumLo_MedM_v2_rr1_Sum.wav",
+   "files": [
+    "audio/perc/log_lo.m4a"
+   ]
+  },
+  "perc/rin": {
+   "kind": "percussion",
+   "source": "vcsl",
+   "origin": "https://github.com/sgossner/VCSL/tree/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Finger%20Cymbals/Fing_Cymb.wav",
+   "files": [
+    "audio/perc/rin.m4a"
+   ]
+  },
+  "perc/taiko_f": {
+   "kind": "percussion",
+   "source": "vsco2ce",
+   "origin": "https://github.com/sgossner/VSCO-2-CE/tree/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/other/ethnic/giant/mallet/EthnicLargeMallet_hit_f_1.wav",
+   "files": [
+    "audio/perc/taiko_f.m4a"
+   ]
+  },
+  "perc/taiko_ff": {
+   "kind": "percussion",
+   "source": "vsco2ce",
+   "origin": "https://github.com/sgossner/VSCO-2-CE/tree/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/other/ethnic/giant/mallet/EthnicLargeMallet_hit_ff_1.wav",
+   "files": [
+    "audio/perc/taiko_ff.m4a"
+   ]
+  },
+  "perc/taiko_mf": {
+   "kind": "percussion",
+   "source": "vsco2ce",
+   "origin": "https://github.com/sgossner/VSCO-2-CE/tree/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/other/ethnic/giant/mallet/EthnicLargeMallet_hit_mf_1.wav",
+   "files": [
+    "audio/perc/taiko_mf.m4a"
+   ]
+  },
+  "perc/taiko_pp": {
+   "kind": "percussion",
+   "source": "vsco2ce",
+   "origin": "https://github.com/sgossner/VSCO-2-CE/tree/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/other/ethnic/giant/mallet/EthnicLargeMallet_hit_pp_1.wav",
+   "files": [
+    "audio/perc/taiko_pp.m4a"
+   ]
+  },
+  "perc/taiko_rim": {
+   "kind": "percussion",
+   "source": "vsco2ce",
+   "origin": "https://github.com/sgossner/VSCO-2-CE/tree/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/other/ethnic/giant/EthnicLargeStick_rimshot_1.wav",
+   "files": [
+    "audio/perc/taiko_rim.m4a"
+   ]
+  },
+  "perc/taiko_stick": {
+   "kind": "percussion",
+   "source": "vsco2ce",
+   "origin": "https://github.com/sgossner/VSCO-2-CE/tree/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/other/ethnic/giant/sticks/EthnicLargeSticks_hit_f_1.wav",
+   "files": [
+    "audio/perc/taiko_stick.m4a"
+   ]
+  },
+  "perc/taiko_stick_soft": {
+   "kind": "percussion",
+   "source": "vsco2ce",
+   "origin": "https://github.com/sgossner/VSCO-2-CE/tree/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/drums/other/ethnic/giant/sticks/EthnicLargeSticks_hit_mp_1.wav",
+   "files": [
+    "audio/perc/taiko_stick_soft.m4a"
+   ]
+  },
+  "perc/timp_roll_hi": {
+   "kind": "percussion",
+   "source": "vsco2ce",
+   "origin": "https://github.com/sgossner/VSCO-2-CE/tree/440300901dfe9275fd84e0b7763af1f8443ae62e/Percussion/Timpani/Rolls/Timpani4_Roll_v5_rr1_Sum.wav",
+   "files": [
+    "audio/perc/timp_roll_hi.m4a"
+   ]
+  },
+  "perc/timp_roll_lo": {
+   "kind": "percussion",
+   "source": "vsco2ce",
+   "origin": "https://github.com/sgossner/VSCO-2-CE/tree/440300901dfe9275fd84e0b7763af1f8443ae62e/Percussion/Timpani/Rolls/Timpani1_Roll_v5_rr1_Sum.wav",
+   "files": [
+    "audio/perc/timp_roll_lo.m4a"
+   ]
+  },
+  "perc/timp1": {
+   "kind": "percussion",
+   "source": "vsco2ce",
+   "origin": "https://github.com/sgossner/VSCO-2-CE/tree/440300901dfe9275fd84e0b7763af1f8443ae62e/Percussion/Timpani/Timpani1_Hit_v3_rr1_Sum.wav",
+   "files": [
+    "audio/perc/timp1.m4a"
+   ]
+  },
+  "perc/timp2": {
+   "kind": "percussion",
+   "source": "vsco2ce",
+   "origin": "https://github.com/sgossner/VSCO-2-CE/tree/440300901dfe9275fd84e0b7763af1f8443ae62e/Percussion/Timpani/Timpani2_Hit_v3_rr1_Sum.wav",
+   "files": [
+    "audio/perc/timp2.m4a"
+   ]
+  },
+  "perc/timp3": {
+   "kind": "percussion",
+   "source": "vsco2ce",
+   "origin": "https://github.com/sgossner/VSCO-2-CE/tree/440300901dfe9275fd84e0b7763af1f8443ae62e/Percussion/Timpani/Timpani3_Hit_v3_rr1_Sum.wav",
+   "files": [
+    "audio/perc/timp3.m4a"
+   ]
+  },
+  "perc/timp4": {
+   "kind": "percussion",
+   "source": "vsco2ce",
+   "origin": "https://github.com/sgossner/VSCO-2-CE/tree/440300901dfe9275fd84e0b7763af1f8443ae62e/Percussion/Timpani/Timpani4_Hit_v3_rr1_Sum.wav",
+   "files": [
+    "audio/perc/timp4.m4a"
+   ]
+  },
+  "perc/timp5": {
+   "kind": "percussion",
+   "source": "vsco2ce",
+   "origin": "https://github.com/sgossner/VSCO-2-CE/tree/440300901dfe9275fd84e0b7763af1f8443ae62e/Percussion/Timpani/Timpani5_Hit_v3_rr1_Sum.wav",
+   "files": [
+    "audio/perc/timp5.m4a"
+   ]
+  },
+  "perc/woodblock": {
+   "kind": "percussion",
+   "source": "vcsl",
+   "origin": "https://github.com/sgossner/VCSL/tree/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Woodblock/wood_click_f_rr1.wav",
+   "files": [
+    "audio/perc/woodblock.m4a"
+   ]
+  },
+  "sfx/armor_1": {
+   "kind": "sfx",
+   "source": "kenney",
+   "origin": "https://kenney.nl/assets/impact-sounds",
+   "files": [
+    "audio/sfx/armor_1.m4a"
+   ]
+  },
+  "sfx/armor_2": {
+   "kind": "sfx",
+   "source": "kenney",
+   "origin": "https://kenney.nl/assets/impact-sounds",
+   "files": [
+    "audio/sfx/armor_2.m4a"
+   ]
+  },
+  "sfx/bell": {
+   "kind": "sfx",
+   "source": "kenney",
+   "origin": "https://kenney.nl/assets/impact-sounds",
+   "files": [
+    "audio/sfx/bell.m4a"
+   ]
+  },
+  "sfx/bone_1": {
+   "kind": "sfx",
+   "source": "kenney",
+   "origin": "https://kenney.nl/assets/impact-sounds",
+   "files": [
+    "audio/sfx/bone_1.m4a"
+   ]
+  },
+  "sfx/bone_2": {
+   "kind": "sfx",
+   "source": "kenney",
+   "origin": "https://kenney.nl/assets/impact-sounds",
+   "files": [
+    "audio/sfx/bone_2.m4a"
+   ]
+  },
+  "sfx/break_heavy": {
+   "kind": "sfx",
+   "source": "kenney",
+   "origin": "https://kenney.nl/assets/impact-sounds",
+   "files": [
+    "audio/sfx/break_heavy.m4a"
+   ]
+  },
+  "sfx/break_wood": {
+   "kind": "sfx",
+   "source": "kenney",
+   "origin": "https://kenney.nl/assets/impact-sounds",
+   "files": [
+    "audio/sfx/break_wood.m4a"
+   ]
+  },
+  "sfx/cancel": {
+   "kind": "sfx",
+   "source": "kenney",
+   "origin": "https://kenney.nl/assets/interface-sounds",
+   "files": [
+    "audio/sfx/cancel.m4a"
+   ]
+  },
+  "sfx/coin": {
+   "kind": "sfx",
+   "source": "kenney",
+   "origin": "https://kenney.nl/assets/rpg-audio",
+   "files": [
+    "audio/sfx/coin.m4a"
+   ]
+  },
+  "sfx/confirm": {
+   "kind": "sfx",
+   "source": "kenney",
+   "origin": "https://kenney.nl/assets/interface-sounds",
+   "files": [
+    "audio/sfx/confirm.m4a"
+   ]
+  },
+  "sfx/creak": {
+   "kind": "sfx",
+   "source": "kenney",
+   "origin": "https://kenney.nl/assets/rpg-audio",
+   "files": [
+    "audio/sfx/creak.m4a"
+   ]
+  },
+  "sfx/cursor": {
+   "kind": "sfx",
+   "source": "kenney",
+   "origin": "https://kenney.nl/assets/interface-sounds",
+   "files": [
+    "audio/sfx/cursor.m4a"
+   ]
+  },
+  "sfx/dodge_1": {
+   "kind": "sfx",
+   "source": "kenney",
+   "origin": "https://kenney.nl/assets/rpg-audio",
+   "files": [
+    "audio/sfx/dodge_1.m4a"
+   ]
+  },
+  "sfx/dodge_2": {
+   "kind": "sfx",
+   "source": "kenney",
+   "origin": "https://kenney.nl/assets/rpg-audio",
+   "files": [
+    "audio/sfx/dodge_2.m4a"
+   ]
+  },
+  "sfx/door_close": {
+   "kind": "sfx",
+   "source": "kenney",
+   "origin": "https://kenney.nl/assets/rpg-audio",
+   "files": [
+    "audio/sfx/door_close.m4a"
+   ]
+  },
+  "sfx/door_open": {
+   "kind": "sfx",
+   "source": "kenney",
+   "origin": "https://kenney.nl/assets/rpg-audio",
+   "files": [
+    "audio/sfx/door_open.m4a"
+   ]
+  },
+  "sfx/draw": {
+   "kind": "sfx",
+   "source": "kenney",
+   "origin": "https://kenney.nl/assets/rpg-audio",
+   "files": [
+    "audio/sfx/draw.m4a"
+   ]
+  },
+  "sfx/drop": {
+   "kind": "sfx",
+   "source": "kenney",
+   "origin": "https://kenney.nl/assets/rpg-audio",
+   "files": [
+    "audio/sfx/drop.m4a"
+   ]
+  },
+  "sfx/guard_1": {
+   "kind": "sfx",
+   "source": "kenney",
+   "origin": "https://kenney.nl/assets/impact-sounds",
+   "files": [
+    "audio/sfx/guard_1.m4a"
+   ]
+  },
+  "sfx/guard_2": {
+   "kind": "sfx",
+   "source": "kenney",
+   "origin": "https://kenney.nl/assets/impact-sounds",
+   "files": [
+    "audio/sfx/guard_2.m4a"
+   ]
+  },
+  "sfx/hit_1": {
+   "kind": "sfx",
+   "source": "kenney",
+   "origin": "https://kenney.nl/assets/impact-sounds",
+   "files": [
+    "audio/sfx/hit_1.m4a"
+   ]
+  },
+  "sfx/hit_2": {
+   "kind": "sfx",
+   "source": "kenney",
+   "origin": "https://kenney.nl/assets/impact-sounds",
+   "files": [
+    "audio/sfx/hit_2.m4a"
+   ]
+  },
+  "sfx/hit_3": {
+   "kind": "sfx",
+   "source": "kenney",
+   "origin": "https://kenney.nl/assets/impact-sounds",
+   "files": [
+    "audio/sfx/hit_3.m4a"
+   ]
+  },
+  "sfx/hit_heavy": {
+   "kind": "sfx",
+   "source": "kenney",
+   "origin": "https://kenney.nl/assets/impact-sounds",
+   "files": [
+    "audio/sfx/hit_heavy.m4a"
+   ]
+  },
+  "sfx/lever": {
+   "kind": "sfx",
+   "source": "kenney",
+   "origin": "https://kenney.nl/assets/rpg-audio",
+   "files": [
+    "audio/sfx/lever.m4a"
+   ]
+  },
+  "sfx/locked": {
+   "kind": "sfx",
+   "source": "kenney",
+   "origin": "https://kenney.nl/assets/interface-sounds",
+   "files": [
+    "audio/sfx/locked.m4a"
+   ]
+  },
+  "sfx/page": {
+   "kind": "sfx",
+   "source": "kenney",
+   "origin": "https://kenney.nl/assets/rpg-audio",
+   "files": [
+    "audio/sfx/page.m4a"
+   ]
+  },
+  "sfx/parry": {
+   "kind": "sfx",
+   "source": "kenney",
+   "origin": "https://kenney.nl/assets/impact-sounds",
+   "files": [
+    "audio/sfx/parry.m4a"
+   ]
+  },
+  "sfx/pause": {
+   "kind": "sfx",
+   "source": "kenney",
+   "origin": "https://kenney.nl/assets/interface-sounds",
+   "files": [
+    "audio/sfx/pause.m4a"
+   ]
+  },
+  "sfx/pickup": {
+   "kind": "sfx",
+   "source": "kenney",
+   "origin": "https://kenney.nl/assets/rpg-audio",
+   "files": [
+    "audio/sfx/pickup.m4a"
+   ]
+  },
+  "sfx/shatter": {
+   "kind": "sfx",
+   "source": "kenney",
+   "origin": "https://kenney.nl/assets/impact-sounds",
+   "files": [
+    "audio/sfx/shatter.m4a"
+   ]
+  },
+  "sfx/sheathe": {
+   "kind": "sfx",
+   "source": "kenney",
+   "origin": "https://kenney.nl/assets/rpg-audio",
+   "files": [
+    "audio/sfx/sheathe.m4a"
+   ]
+  },
+  "sfx/slice_1": {
+   "kind": "sfx",
+   "source": "kenney",
+   "origin": "https://kenney.nl/assets/rpg-audio",
+   "files": [
+    "audio/sfx/slice_1.m4a"
+   ]
+  },
+  "sfx/slice_2": {
+   "kind": "sfx",
+   "source": "kenney",
+   "origin": "https://kenney.nl/assets/rpg-audio",
+   "files": [
+    "audio/sfx/slice_2.m4a"
+   ]
+  },
+  "sfx/soul": {
+   "kind": "sfx",
+   "source": "kenney",
+   "origin": "https://kenney.nl/assets/interface-sounds",
+   "files": [
+    "audio/sfx/soul.m4a"
+   ]
+  },
+  "sfx/step_dirt_1": {
+   "kind": "sfx",
+   "source": "kenney",
+   "origin": "https://kenney.nl/assets/rpg-audio",
+   "files": [
+    "audio/sfx/step_dirt_1.m4a"
+   ]
+  },
+  "sfx/step_dirt_2": {
+   "kind": "sfx",
+   "source": "kenney",
+   "origin": "https://kenney.nl/assets/rpg-audio",
+   "files": [
+    "audio/sfx/step_dirt_2.m4a"
+   ]
+  },
+  "sfx/step_dirt_3": {
+   "kind": "sfx",
+   "source": "kenney",
+   "origin": "https://kenney.nl/assets/rpg-audio",
+   "files": [
+    "audio/sfx/step_dirt_3.m4a"
+   ]
+  },
+  "sfx/step_grass_1": {
+   "kind": "sfx",
+   "source": "kenney",
+   "origin": "https://kenney.nl/assets/impact-sounds",
+   "files": [
+    "audio/sfx/step_grass_1.m4a"
+   ]
+  },
+  "sfx/step_grass_2": {
+   "kind": "sfx",
+   "source": "kenney",
+   "origin": "https://kenney.nl/assets/impact-sounds",
+   "files": [
+    "audio/sfx/step_grass_2.m4a"
+   ]
+  },
+  "sfx/step_grass_3": {
+   "kind": "sfx",
+   "source": "kenney",
+   "origin": "https://kenney.nl/assets/impact-sounds",
+   "files": [
+    "audio/sfx/step_grass_3.m4a"
+   ]
+  },
+  "sfx/step_stone_1": {
+   "kind": "sfx",
+   "source": "kenney",
+   "origin": "https://kenney.nl/assets/impact-sounds",
+   "files": [
+    "audio/sfx/step_stone_1.m4a"
+   ]
+  },
+  "sfx/step_stone_2": {
+   "kind": "sfx",
+   "source": "kenney",
+   "origin": "https://kenney.nl/assets/impact-sounds",
+   "files": [
+    "audio/sfx/step_stone_2.m4a"
+   ]
+  },
+  "sfx/step_stone_3": {
+   "kind": "sfx",
+   "source": "kenney",
+   "origin": "https://kenney.nl/assets/impact-sounds",
+   "files": [
+    "audio/sfx/step_stone_3.m4a"
+   ]
+  },
+  "sfx/step_wood_1": {
+   "kind": "sfx",
+   "source": "kenney",
+   "origin": "https://kenney.nl/assets/impact-sounds",
+   "files": [
+    "audio/sfx/step_wood_1.m4a"
+   ]
+  },
+  "sfx/step_wood_2": {
+   "kind": "sfx",
+   "source": "kenney",
+   "origin": "https://kenney.nl/assets/impact-sounds",
+   "files": [
+    "audio/sfx/step_wood_2.m4a"
+   ]
+  },
+  "sfx/step_wood_3": {
+   "kind": "sfx",
+   "source": "kenney",
+   "origin": "https://kenney.nl/assets/impact-sounds",
+   "files": [
+    "audio/sfx/step_wood_3.m4a"
+   ]
+  },
+  "sfx/stone": {
+   "kind": "sfx",
+   "source": "kenney",
+   "origin": "https://kenney.nl/assets/impact-sounds",
+   "files": [
+    "audio/sfx/stone.m4a"
+   ]
+  },
+  "sfx/text": {
+   "kind": "sfx",
+   "source": "kenney",
+   "origin": "https://kenney.nl/assets/interface-sounds",
+   "files": [
+    "audio/sfx/text.m4a"
+   ]
+  },
+  "sfx/trap": {
+   "kind": "sfx",
+   "source": "kenney",
+   "origin": "https://kenney.nl/assets/impact-sounds",
+   "files": [
+    "audio/sfx/trap.m4a"
+   ]
+  },
+  "sfx/unlock": {
+   "kind": "sfx",
+   "source": "kenney",
+   "origin": "https://kenney.nl/assets/rpg-audio",
+   "files": [
+    "audio/sfx/unlock.m4a"
+   ]
+  },
+  "tex/bamboo_wall": {
+   "kind": "texture",
+   "source": "polyhaven",
+   "origin": "https://polyhaven.com/a/bamboo_wall",
+   "author": "Amal Kumar",
+   "files": [
+    "tex/bamboo_wall/diff.webp",
+    "tex/bamboo_wall/nor.webp",
+    "tex/bamboo_wall/arm.webp"
+   ]
+  },
+  "tex/dark_rock": {
+   "kind": "texture",
+   "source": "polyhaven",
+   "origin": "https://polyhaven.com/a/dark_rock",
+   "author": "Amal Kumar",
+   "files": [
+    "tex/dark_rock/diff.webp",
+    "tex/dark_rock/nor.webp",
+    "tex/dark_rock/arm.webp"
+   ]
+  },
+  "tex/dark_wooden_planks": {
+   "kind": "texture",
+   "source": "polyhaven",
+   "origin": "https://polyhaven.com/a/dark_wooden_planks",
+   "author": "Amal Kumar",
+   "files": [
+    "tex/dark_wooden_planks/diff.webp",
+    "tex/dark_wooden_planks/nor.webp",
+    "tex/dark_wooden_planks/arm.webp"
+   ]
+  },
+  "tex/forest_ground_04": {
+   "kind": "texture",
+   "source": "polyhaven",
+   "origin": "https://polyhaven.com/a/forest_ground_04",
+   "author": "Rob Tuytel, Rico Cilliers",
+   "files": [
+    "tex/forest_ground_04/diff.webp",
+    "tex/forest_ground_04/nor.webp",
+    "tex/forest_ground_04/arm.webp"
+   ]
+  },
+  "tex/forest_leaves_03": {
+   "kind": "texture",
+   "source": "polyhaven",
+   "origin": "https://polyhaven.com/a/forest_leaves_03",
+   "author": "Rob Tuytel, Dimitrios Savva",
+   "files": [
+    "tex/forest_leaves_03/diff.webp",
+    "tex/forest_leaves_03/nor.webp",
+    "tex/forest_leaves_03/arm.webp"
+   ]
+  },
+  "tex/grey_roof_tiles": {
+   "kind": "texture",
+   "source": "polyhaven",
+   "origin": "https://polyhaven.com/a/grey_roof_tiles",
+   "author": "Rob Tuytel",
+   "files": [
+    "tex/grey_roof_tiles/diff.webp",
+    "tex/grey_roof_tiles/nor.webp",
+    "tex/grey_roof_tiles/arm.webp"
+   ]
+  },
+  "tex/japanese_cedar_bark": {
+   "kind": "texture",
+   "source": "polyhaven",
+   "origin": "https://polyhaven.com/a/japanese_cedar_bark",
+   "author": "Charlotte Baglioni",
+   "files": [
+    "tex/japanese_cedar_bark/diff.webp",
+    "tex/japanese_cedar_bark/nor.webp",
+    "tex/japanese_cedar_bark/arm.webp"
+   ]
+  },
+  "tex/japanese_cedar_planks": {
+   "kind": "texture",
+   "source": "polyhaven",
+   "origin": "https://polyhaven.com/a/japanese_cedar_planks",
+   "author": "Charlotte Baglioni, Rico Cilliers",
+   "files": [
+    "tex/japanese_cedar_planks/diff.webp",
+    "tex/japanese_cedar_planks/nor.webp",
+    "tex/japanese_cedar_planks/arm.webp"
+   ]
+  },
+  "tex/japanese_stone_wall": {
+   "kind": "texture",
+   "source": "polyhaven",
+   "origin": "https://polyhaven.com/a/japanese_stone_wall",
+   "author": "Rico Cilliers, Charlotte Baglioni, Dario Barresi",
+   "files": [
+    "tex/japanese_stone_wall/diff.webp",
+    "tex/japanese_stone_wall/nor.webp",
+    "tex/japanese_stone_wall/arm.webp"
+   ]
+  },
+  "tex/japanese_zelkova_bark": {
+   "kind": "texture",
+   "source": "polyhaven",
+   "origin": "https://polyhaven.com/a/japanese_zelkova_bark",
+   "author": "Charlotte Baglioni",
+   "files": [
+    "tex/japanese_zelkova_bark/diff.webp",
+    "tex/japanese_zelkova_bark/nor.webp",
+    "tex/japanese_zelkova_bark/arm.webp"
+   ]
+  },
+  "tex/mossy_cobblestone": {
+   "kind": "texture",
+   "source": "polyhaven",
+   "origin": "https://polyhaven.com/a/mossy_cobblestone",
+   "author": "Sơn Nguyễn",
+   "files": [
+    "tex/mossy_cobblestone/diff.webp",
+    "tex/mossy_cobblestone/nor.webp",
+    "tex/mossy_cobblestone/arm.webp"
+   ]
+  },
+  "tex/mossy_rock": {
+   "kind": "texture",
+   "source": "polyhaven",
+   "origin": "https://polyhaven.com/a/mossy_rock",
+   "author": "Rob Tuytel",
+   "files": [
+    "tex/mossy_rock/diff.webp",
+    "tex/mossy_rock/nor.webp",
+    "tex/mossy_rock/arm.webp"
+   ]
+  },
+  "tex/mud_forest": {
+   "kind": "texture",
+   "source": "polyhaven",
+   "origin": "https://polyhaven.com/a/mud_forest",
+   "author": "eye-candy.xyz",
+   "files": [
+    "tex/mud_forest/diff.webp",
+    "tex/mud_forest/nor.webp",
+    "tex/mud_forest/arm.webp"
+   ]
+  },
+  "tex/muddy_tracks": {
+   "kind": "texture",
+   "source": "polyhaven",
+   "origin": "https://polyhaven.com/a/muddy_tracks",
+   "author": "Amal Kumar",
+   "files": [
+    "tex/muddy_tracks/diff.webp",
+    "tex/muddy_tracks/nor.webp",
+    "tex/muddy_tracks/arm.webp"
+   ]
+  },
+  "tex/rock_wall_02": {
+   "kind": "texture",
+   "source": "polyhaven",
+   "origin": "https://polyhaven.com/a/rock_wall_02",
+   "author": "Rob Tuytel",
+   "files": [
+    "tex/rock_wall_02/diff.webp",
+    "tex/rock_wall_02/nor.webp",
+    "tex/rock_wall_02/arm.webp"
+   ]
+  },
+  "tex/rocky_terrain_02": {
+   "kind": "texture",
+   "source": "polyhaven",
+   "origin": "https://polyhaven.com/a/rocky_terrain_02",
+   "author": "Amal Kumar",
+   "files": [
+    "tex/rocky_terrain_02/diff.webp",
+    "tex/rocky_terrain_02/nor.webp",
+    "tex/rocky_terrain_02/arm.webp"
+   ]
+  },
+  "tex/rocky_trail": {
+   "kind": "texture",
+   "source": "polyhaven",
+   "origin": "https://polyhaven.com/a/rocky_trail",
+   "author": "Amal Kumar",
+   "files": [
+    "tex/rocky_trail/diff.webp",
+    "tex/rocky_trail/nor.webp",
+    "tex/rocky_trail/arm.webp"
+   ]
+  },
+  "tex/sparse_grass": {
+   "kind": "texture",
+   "source": "polyhaven",
+   "origin": "https://polyhaven.com/a/sparse_grass",
+   "author": "Amal Kumar",
+   "files": [
+    "tex/sparse_grass/diff.webp",
+    "tex/sparse_grass/nor.webp",
+    "tex/sparse_grass/arm.webp"
+   ]
+  },
+  "tex/thatch_roof_angled": {
+   "kind": "texture",
+   "source": "polyhaven",
+   "origin": "https://polyhaven.com/a/thatch_roof_angled",
+   "author": "Rob Tuytel, Dimitrios Savva",
+   "files": [
+    "tex/thatch_roof_angled/diff.webp",
+    "tex/thatch_roof_angled/nor.webp",
+    "tex/thatch_roof_angled/arm.webp"
+   ]
+  },
+  "tex/worn_mossy_plasterwall": {
+   "kind": "texture",
+   "source": "polyhaven",
+   "origin": "https://polyhaven.com/a/worn_mossy_plasterwall",
+   "author": "Amal Kumar",
+   "files": [
+    "tex/worn_mossy_plasterwall/diff.webp",
+    "tex/worn_mossy_plasterwall/nor.webp",
+    "tex/worn_mossy_plasterwall/arm.webp"
+   ]
+  }
+ }
+}

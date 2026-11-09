@@ -1,12 +1,8 @@
 import type { Game } from '../core/Game';
 import { Scene } from '../core/SceneManager';
-import { BACK_STAND, HERO_PAL } from '../data/sprites/hero';
-import { KING_IDLE } from '../data/sprites/bosses';
-import { C } from '../graphics/Palette';
-import { PixelRenderer } from '../graphics/PixelRenderer';
 import { t } from '../i18n';
-import { drawControls } from '../ui/Controls';
-import { MessageBox } from '../ui/Window';
+import { wrapText } from '../ui/Text';
+import { COL, UI } from '../ui/UI';
 
 const PAGES = [
   'THE LAND OF HAIYA WAS KEPT BY LAMPS. EVERY NIGHT THE SHRINE LAMPS BURNED, AND THE DEAD SLEPT.',
@@ -15,80 +11,71 @@ const PAGES = [
   'KAGEMARU, LAST OF THE LAMP WARDENS, DREW HIS BLADE AND WALKED INTO THE DARK.',
   'TAKE BACK THE MIRROR, THE JEWEL AND THE FLUTE. OPEN THE TEMPLE OF THE DEAD. RELIGHT THE LAMPS.',
 ];
+/** Ticks a page stays up once it has faded in. */
+const HOLD = 300;
+const FADE = 40;
 
+/** The prologue: pages of the tale fading in and out over drifting embers. */
 export class IntroScene implements Scene {
   private page = 0;
-  private frame = 0;
-  private msg = new MessageBox(28, 3);
+  /** Ticks into the current page; counts down from FADE while fading out. */
+  private t = 0;
+  private leaving = false;
+  /** x is a share of the screen's width, which depends on the window. */
+  private readonly embers = Array.from({ length: 56 }, () => ({ x: Math.random(), y: Math.random() * 448, v: 0.2 + Math.random() * 0.5, p: Math.random() * 6 }));
 
-  constructor(private readonly game: Game) {
-    this.msg.set(t(PAGES[0]));
-  }
+  constructor(private readonly game: Game) {}
 
   enter(): void {
     this.game.music('DUNGEON');
   }
 
   update(): void {
-    this.frame++;
-    const g = this.game, inp = g.input;
-    if (inp.pressed('start')) return this.done();
-    if (this.page >= PAGES.length) {
-      if (inp.pressed('a') || inp.pressed('b')) this.done();
+    const inp = this.game.input;
+    for (const e of this.embers) {
+      e.y -= e.v;
+      e.x += Math.sin(e.p + e.y * 0.02) * 0.0005;
+      if (e.y < -4) (e.y = 452), (e.x = Math.random());
+    }
+    // Enter is both START and CONFIRM on the keyboard: there it turns the page, and ESC skips.
+    if (inp.pressed('cancel') || (inp.pressed('start') && !inp.pressed('confirm'))) return this.done();
+    if (this.leaving) {
+      if (--this.t <= 0) {
+        this.leaving = false;
+        if (++this.page >= PAGES.length) return this.done();
+      }
       return;
     }
-    if (this.msg.update(inp.held('a') || inp.held('b'))) g.sfx('text');
-    if ((inp.pressed('a') || inp.pressed('b')) && !this.msg.advance()) {
-      this.page++;
-      if (this.page < PAGES.length) this.msg.set(t(PAGES[this.page]));
+    this.t++;
+    if (this.t > HOLD || (this.t > FADE && (inp.pressed('confirm') || inp.mouseLeft))) {
+      this.leaving = true;
+      this.t = FADE;
     }
   }
 
   private done(): void {
+    if (this.page > PAGES.length) return;
+    this.page = PAGES.length + 1;
     this.game.sfx('confirm');
     this.game.toWorld();
   }
 
-  draw(r: PixelRenderer): void {
-    r.clear(C.BLACK);
-    if (this.page >= PAGES.length) {
-      drawControls(r, 12);
-      if ((this.frame >> 4) & 1) r.textCenter(t('PRESS {A}'), 228, C.LGRAY);
-      return;
+  drawUI(ui: UI): void {
+    const g = ui.ctx;
+    const w = ui.right - ui.left;
+    g.fillStyle = '#030204';
+    g.fillRect(ui.left, 0, w, 448);
+    for (const e of this.embers) {
+      g.globalAlpha = 0.35 + 0.35 * Math.sin(e.p + e.y * 0.05);
+      g.fillStyle = '#ff8a3a';
+      g.fillRect(ui.left + e.x * w, e.y, 2, 2);
     }
-    const cx = 128, cy = 100;
-    switch (this.page) {
-      case 0:
-      case 4: {
-        // a row of shrine lamps (lit, or with three seals above)
-        for (let i = 0; i < 5; i++) {
-          const x = 40 + i * 44, lit = this.page === 4 || ((this.frame >> 3) + i) % 9 !== 0;
-          r.rect(x - 1, 100, 3, 40, 0x00);
-          r.rect(x - 7, 86, 14, 14, C.BLACK);
-          r.frame(x - 7, 86, 14, 14, 0x00);
-          r.rect(x - 5, 88, 10, 10, lit ? ((this.frame >> 2) + i) & 1 ? 0x27 : 0x28 : 0x07);
-          r.rect(x - 9, 82, 18, 4, 0x00);
-        }
-        if (this.page === 4) ['◆', '◆', '◆'].forEach((d, i) => r.text(d, 100 + i * 24, 56, C.ORANGE));
-        break;
-      }
-      case 1:
-        r.silhouette(KING_IDLE, cx - (KING_IDLE.w >> 1), 150 - KING_IDLE.h, (this.frame >> 3) & 1 ? 0x06 : 0x16);
-        for (let x = 0; x < 256; x++) if ((x * 13) % 7 < 2) r.vline(x, 150, 150 + ((x * 5) % 9), 0x16);
-        break;
-      case 2:
-        // receding corridor lines
-        for (let k = 0; k < 5; k++) {
-          const w = 100 * Math.pow(0.6, k), h = 60 * Math.pow(0.6, k);
-          r.frame(Math.round(cx - w), Math.round(cy - h), Math.round(w * 2), Math.round(h * 2), k < 2 ? 0x00 : 0x0c);
-        }
-        break;
-      case 3:
-        r.sprite(BACK_STAND, cx - 31, 158 - BACK_STAND.h + 10, HERO_PAL);
-        break;
+    g.globalAlpha = 1;
+    if (this.page < PAGES.length) {
+      const a = this.leaving ? this.t / FADE : Math.min(1, this.t / FADE);
+      const lines = wrapText(t(PAGES[this.page]), 440, (s) => ui.measure(s, 19));
+      lines.forEach((l, i) => ui.text(l, 320, 214 - (lines.length - 1) * 16 + i * 32, { size: 19, align: 'center', color: COL.text, alpha: a }));
     }
-    r.rect(0, 160, 256, 80, C.BLACK);
-    this.msg.draw(r, 0, 176, 256, this.frame);
-    r.textRight(t('{START}: SKIP'), 248, 226, C.GRAY);
+    ui.text(t('{CANCEL}: SKIP'), ui.right - 20, 432, { size: 12, align: 'right', color: COL.gray });
   }
 }
