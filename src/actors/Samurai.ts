@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { lamellarTextures } from '../engine/ProcTex';
 import { cyl, part, swordGrip } from './Build';
-import { BoneName, Pose, Rig, buildRig, makeClip, mirror } from './Rig';
+import { BoneName, Pose, Rig, buildRig, makeClip, makeLoop, mirror } from './Rig';
 
 /** Shared materials (built once). */
 let MATS: ReturnType<typeof makeMaterials> | null = null;
@@ -169,8 +169,8 @@ const PASS: Pose = {
   thighL: [-5, 0, 0], shinL: [10, 0, 0], footL: [0, 0, 0],
   thighR: [-20, 0, 0], shinR: [95, 0, 0], footR: [-10, 0, 0],
 };
-/** The legs and torso mirror on the other step; the sword arm keeps its carry. */
-const otherStep = (p: Pose, armL: V): Pose => ({ ...mirror(p), ...ARMS.carry, armL, forearmL: p.forearmL });
+/** The legs and torso mirror on the other step; the sword arm keeps its carry, the free hand its angle. */
+const otherStep = (p: Pose, armL: V): Pose => ({ ...mirror(p), ...ARMS.carry, armL, forearmL: p.forearmL, handL: p.handL });
 
 const GUARD: Pose = { ...body(-0.08, [10, 0, 0], [4, -20, 0], [-10, 16, 0], { ...LEGS.kamae, thighL: [-22, 0, 8], thighR: [16, 0, -8] }), ...ARMS.guard };
 
@@ -180,7 +180,7 @@ export const SAMURAI_CLIPS = {
     [1.1, { ...KAMAE, lift: -0.05, chest: [6, -12, 0] }],
     [2.2, KAMAE],
   ]),
-  run: makeClip('run', [
+  run: makeLoop('run', [
     [0, STRIDE],
     [0.17, PASS],
     [0.34, otherStep(STRIDE, [20, 0, 12])],

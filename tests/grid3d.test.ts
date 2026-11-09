@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { DUNGEONS } from '../src/data/levels/dungeons';
 import { Dungeon } from '../src/world/DungeonMap';
-import { CELL, cellKind, center, clearance, collide, inSolid, layout, solidRects } from '../src/world/Grid3D';
+import { CELL, cellKind, center, clearWay, clearance, collide, inSolid, layout, solidRects } from '../src/world/Grid3D';
 
 const flags = (on: Record<string, boolean> = {}) => ({ get: (n: string) => !!on[n] });
 
@@ -72,5 +72,23 @@ describe('3D labyrinth grid', () => {
     const k = clearance({ x: center(6), z: center(11) }, { x: center(6) - 8, z: center(11) }, solid);
     expect(k).toBeGreaterThan(0.2);
     expect(k).toBeLessThan(0.3);
+  });
+
+  it('measures the clear distance without steps as the line grows (a camera pulled in by it does not judder)', () => {
+    const d = d1();
+    const solid = (x: number, y: number) => solidRects(d, x, y);
+    const a = { x: center(6), z: center(11) };
+    // rock begins 2 m west of the start
+    for (let len = 3; len <= 8; len += 0.37) expect(clearance(a, { x: a.x - len, z: a.z }, solid) * len).toBeCloseTo(center(6) - 6 * CELL, 2);
+  });
+
+  it('finds a way clear for a body of the given radius', () => {
+    const d = d1();
+    const solid = (x: number, y: number) => solidRects(d, x, y);
+    // start (6,11) to (10,11): a corridor one cell wide, rock to the north and south
+    const a = { x: center(6), z: center(11) }, b = { x: center(10), z: center(11) };
+    expect(clearWay(a, b, 0.4, solid)).toBe(true);
+    expect(clearWay(a, b, CELL / 2 + 0.5, solid)).toBe(false);
+    expect(clearWay(a, { x: a.x - 8, z: a.z }, 0.4, solid)).toBe(false);
   });
 });

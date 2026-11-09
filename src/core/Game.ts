@@ -16,7 +16,9 @@ import { IsoScene } from '../scenes/IsoScene';
 import { TitleScene } from '../scenes/TitleScene';
 import { PauseMenu } from '../ui/PauseMenu';
 import { COL, UI } from '../ui/UI';
+import { Fatigue } from '../combat/Fatigue';
 import { CheatCode } from './Cheat';
+import { Difficulty, RULES } from './Difficulty';
 import { GameLoop } from './GameLoop';
 import { DUNGEONS } from '../data/levels/dungeons';
 import { WORLD_ENTRANCES } from '../data/levels/world';
@@ -39,6 +41,8 @@ export class Game {
   private readonly loop: GameLoop;
   private readonly interp = new Interp();
   state: GameState = newGameState();
+  /** The hero's tiredness and run mode, kept across areas (not saved). */
+  readonly fatigue = new Fatigue();
   settings: Settings = SaveManager.loadSettings();
   frame = 0;
   continuesLeft = 3;
@@ -83,6 +87,7 @@ export class Game {
     if (this.slowFor > 0 && --this.slowFor === 0) this.loop.scale = 1;
     this.ui.frame = this.frame;
     this.input.poll();
+    this.fatigue.rate = RULES[this.state.difficulty].tire;
     if (this.input.device !== this.labelledDevice) this.labelPage();
     const cur = this.scenes.current;
     for (const tap of this.input.taps) if (this.cheat.feed(tap, this.frame)) this.toggleReveal();
@@ -163,7 +168,7 @@ export class Game {
     const hint = document.getElementById('hint');
     if (hint) {
       hint.textContent = t(
-        '{MOVE} MOVE · {ATTACK} ATTACK · {STRONG} STRONG · {GUARD} GUARD · {DODGE} DODGE · {ACT} EXAMINE · {ITEM} ITEM · {LOCK} LOCK ON · {MAP} MAP · {START} PAUSE · F FULLSCREEN',
+        '{MOVE} MOVE · {RUN} RUN / WALK · {ATTACK} ATTACK · {STRONG} STRONG · {GUARD} GUARD · {DODGE} DODGE · {ACT} EXAMINE · {ITEM} ITEM · {LOCK} LOCK ON · {MAP} MAP · {START} PAUSE · F FULLSCREEN',
       );
     }
   }
@@ -191,9 +196,10 @@ export class Game {
     this.scenes.change(new TitleScene(this));
   }
 
-  newGame(): void {
-    this.state = newGameState();
+  newGame(difficulty: Difficulty): void {
+    this.state = newGameState(difficulty);
     this.continuesLeft = 3;
+    this.fatigue.reset();
     this.scenes.change(new IntroScene(this));
   }
 
@@ -202,6 +208,7 @@ export class Game {
     if (!s) return false;
     this.state = s;
     this.continuesLeft = 3;
+    this.fatigue.reset();
     this.resume(s.location);
     return true;
   }
@@ -283,6 +290,7 @@ export class Game {
     s.life = s.maxLife;
     s.gold = Math.floor(s.gold / 2);
     s.location = { ...s.checkpoint };
+    this.fatigue.reset();
     this.resume(s.location);
   }
 }

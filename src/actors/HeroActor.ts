@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { Fatigue } from '../combat/Fatigue';
 import { HeroInput, HeroMachine, HeroState, HitResult, TIMING } from '../combat/HeroMachine';
 import type { InputManager } from '../core/InputManager';
 import { Afterimages } from '../world/Afterimages';
@@ -7,7 +8,11 @@ import { SwordTrail } from '../world/SwordTrail';
 import { Animator } from './Animator';
 import { SAMURAI_CLIPS, SamuraiClip, SamuraiModel, buildSamurai } from './Samurai';
 
-const RUN_SPEED = 5;
+/** Metres per second at a walk (running and trudging scale it: see Fatigue). */
+const WALK_SPEED = 5;
+/** Turn rate (rad/s) on the move or standing, and with the guard up. */
+const TURN = 20;
+const GUARD_TURN = 14;
 const ONCE: SamuraiClip[] = ['atk1', 'atk2', 'atk3', 'strong', 'counter', 'dodge', 'guardHit', 'hurt', 'die', 'use'];
 const BLOWS = new Set<HeroState>(['atk1', 'atk2', 'atk3', 'strong', 'counter']);
 /** Soft lock: a blow with nothing aimed at turns to the nearest foe this close (to its body) and this far off the intended line. */
@@ -15,6 +20,8 @@ const SOFT_RANGE = 4.5;
 const SOFT_ANGLE = (70 * Math.PI) / 180;
 /** Turn rate (rad/s) while a blow recovers. */
 const RECOVER_TURN = 4;
+/** Crossfade (seconds) between standing and walking: the sword comes down to the carry or up to the guard. */
+const STRIDE_FADE = 0.2;
 const wrap = (a: number) => Math.atan2(Math.sin(a), Math.cos(a));
 /** Trail colours: light cuts pale, the strong cut vermilion, the counter gold. */
 const TRAIL_COLOR: Partial<Record<HeroState, number>> = { atk1: 0xe8e2d4, atk2: 0xe8e2d4, atk3: 0xe8e2d4, strong: 0xff3c18, counter: 0xffc040 };
@@ -53,7 +60,8 @@ export class HeroActor {
   /** The trail and the dodge's afterimages, in world space: add to the scene. */
   readonly effects = new THREE.Group();
 
-  constructor(public x: number, public z: number) {
+  /** `fatigue` is the game's, so tiredness and run mode carry from area to area. */
+  constructor(public x: number, public z: number, readonly fatigue = new Fatigue()) {
     this.model = buildSamurai();
     this.root = this.model.rig.root;
     this.root.traverse((o) => (o.castShadow = false));
@@ -98,6 +106,7 @@ export class HeroActor {
     const steer = !frozen && mag < 0.1 && auto && (auto.dx || auto.dz) ? auto : null;
     if (steer) mag = 1;
     const hi = this.read(inp, frozen, mag, auto);
+    if (!frozen && inp.pressed('run')) this.fatigue.toggle();
     const mc = this.machine;
     const before = mc.state, beforeSwing = mc.swing;
     mc.update(hi);
@@ -108,12 +117,15 @@ export class HeroActor {
     if (dl > 1e-6) (dx /= dl), (dz /= dl);
     if (mc.state !== before || mc.swing !== beforeSwing) {
       const blow = BLOWS.has(mc.state);
-      // snap into a blow, ease out of one
-      this.anim.play(mc.state, blow ? 0.06 : BLOWS.has(before) ? 0.12 : 0.08, true);
+      // snap into a blow, ease out of one; set off and stop at an easy pace
+      const stride = (mc.state === 'run' || mc.state === 'idle') && (before === 'run' || before === 'idle');
+      this.anim.play(mc.state, blow ? 0.06 : BLOWS.has(before) ? 0.12 : stride ? STRIDE_FADE : 0.08, true);
       this.soft = blow && !target && auto?.face === undefined ? this.nearest(near, mag > 0.1 ? Math.atan2(dx, dz) : this.yaw) : null;
     }
     if (this.soft && (!this.soft.alive || !BLOWS.has(mc.state))) this.soft = null;
     const aim = target ?? this.soft;
+    // the body turns the way it goes, unless it faces a mark (a lock, a cursor's aim)
+    const marked = auto?.face !== undefined || !!aim;
     const dt = 1 / 60;
     if (mc.canTurn || mc.recovering) {
       let want: number | null = null;
@@ -121,15 +133,22 @@ export class HeroActor {
       else if (aim && mc.state !== 'dodge') want = Math.atan2(aim.x - this.x, aim.z - this.z);
       else if (mag > 0.1) want = Math.atan2(dx, dz);
       if (want !== null) {
-        const rate = !mc.canTurn ? RECOVER_TURN : mc.state === 'run' || mc.state === 'idle' || mc.state === 'guard' ? 14 : 30;
+        const rate = !mc.canTurn ? RECOVER_TURN : mc.state === 'run' || mc.state === 'idle' ? TURN : mc.state === 'guard' ? GUARD_TURN : 30;
         this.yaw += Math.max(-rate * dt, Math.min(rate * dt, wrap(want - this.yaw)));
       }
     }
-    const speed = RUN_SPEED * mc.moveFactor * mag;
+    const legs = mc.state === 'run' ? this.fatigue.pace : 1;
+    const ahead = Math.cos(wrap(Math.atan2(dx, dz) - this.yaw));
+    let speed = WALK_SPEED * mc.moveFactor * mag * legs;
+    // turning round to go the other way: wheel about first instead of sliding off backwards
+    if (!marked) speed *= Math.max(0, ahead);
     if (speed > 0) {
       this.x += dx * speed * dt;
       this.z += dz * speed * dt;
     }
+    this.fatigue.tick(speed <= 0 ? 'rest' : legs > 1 ? 'run' : 'walk');
+    // the stride keeps time with the legs, and runs in reverse while backing away from a mark
+    this.anim.speed('run', (speed > 0 && ahead < -0.3 ? -1 : 1) * legs);
     let l = mc.lunge * dt;
     // a blow's lunge stops at the body it is aimed at instead of running through it
     if (l > 0 && aim && BLOWS.has(mc.state)) l = Math.min(l, Math.max(0, Math.hypot(aim.x - this.x, aim.z - this.z) - aim.spec.radius - this.radius - 0.15));

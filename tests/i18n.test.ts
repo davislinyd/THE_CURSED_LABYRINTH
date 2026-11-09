@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { DIFFICULTY_INFO } from '../src/core/Difficulty';
 import { DIR_NAMES, ITEM_NAMES, KEY_ITEM_INFO } from '../src/core/GameState';
 import { FONT_CHARS } from '../src/data/fontChars';
 import { DUNGEONS } from '../src/data/levels/dungeons';
@@ -39,6 +40,7 @@ function displayed(): string[] {
   // game data
   out.push(...Object.values(ITEM_NAMES), ...DIR_NAMES);
   for (const k of Object.values(KEY_ITEM_INFO)) out.push(k.name, k.desc);
+  for (const d of Object.values(DIFFICULTY_INFO)) out.push(d.name, d.desc);
   for (const d of Object.values(DUNGEONS)) out.push(d.name, ...Object.values(d.tablets ?? {}), ...Object.values(d.npcs ?? {}));
   out.push(...arrayLiterals('scenes/IsoScene.ts', 'AREA_NAME'), ...arrayLiterals('scenes/IsoScene.ts', 'NPC_LABEL'), ...arrayLiterals('scenes/IsoScene.ts', 'FOE_NAMES'));
   for (const m of src('scenes/IsoScene.ts').matchAll(/label: '([^']+)'/g)) out.push(m[1]);

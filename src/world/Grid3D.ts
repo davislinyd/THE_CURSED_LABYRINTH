@@ -98,18 +98,39 @@ export function inSolid(p: P2, solid: SolidFn): boolean {
   return solid(cx, cy).some((b) => p.x > b.x0 && p.x < b.x1 && p.z > b.z0 && p.z < b.z1);
 }
 
-/** Share (0..1) of the segment a -> b that is clear before it first enters a solid rect. */
+/**
+ * Share (0..1) of the segment a -> b that is clear before it first enters a solid rect.
+ * Sampled every `step` metres, then narrowed down between the last clear sample and the
+ * first solid one, so the share changes smoothly as the segment moves.
+ */
 export function clearance(a: P2, b: P2, solid: SolidFn, step = 0.2): number {
   const len = Math.hypot(b.x - a.x, b.z - a.z);
   const n = Math.max(1, Math.ceil(len / step));
   const p = { x: 0, z: 0 };
-  for (let i = 1; i <= n; i++) {
-    const k = i / n;
+  const hit = (k: number) => {
     p.x = a.x + (b.x - a.x) * k;
     p.z = a.z + (b.z - a.z) * k;
-    if (inSolid(p, solid)) return (i - 1) / n;
+    return inSolid(p, solid);
+  };
+  for (let i = 1; i <= n; i++) {
+    if (!hit(i / n)) continue;
+    let lo = (i - 1) / n, hi = i / n;
+    for (let j = 0; j < 6; j++) {
+      const mid = (lo + hi) / 2;
+      if (hit(mid)) hi = mid;
+      else lo = mid;
+    }
+    return lo;
   }
   return 1;
+}
+
+/** Whether a body of radius `r` can go straight from a to b without running into a solid rect. */
+export function clearWay(a: P2, b: P2, r: number, solid: SolidFn): boolean {
+  const dx = b.x - a.x, dz = b.z - a.z, l = Math.hypot(dx, dz) || 1;
+  const ox = (-dz / l) * r, oz = (dx / l) * r;
+  // its middle and both flanks
+  return [0, 1, -1].every((s) => clearance({ x: a.x + ox * s, z: a.z + oz * s }, { x: b.x + ox * s, z: b.z + oz * s }, solid, 0.25) === 1);
 }
 
 export interface WallFace {

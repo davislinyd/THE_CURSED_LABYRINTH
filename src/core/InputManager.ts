@@ -2,7 +2,7 @@ import { CursorKind, makeCursors } from '../ui/Cursors';
 
 export type Action =
   | 'up' | 'down' | 'left' | 'right'
-  | 'attack' | 'strong' | 'guard' | 'dodge' | 'item' | 'act' | 'lock' | 'map'
+  | 'attack' | 'strong' | 'guard' | 'dodge' | 'item' | 'act' | 'lock' | 'map' | 'run'
   | 'start' | 'select' | 'confirm' | 'cancel'
   | 'item1' | 'item2' | 'item3';
 
@@ -10,7 +10,7 @@ export type Device = 'kb' | 'pad';
 
 /**
  * Keyboard code -> actions. Menu confirm / cancel share keys with gameplay actions.
- * J K L I serve keyboard-only play; Shift, R, M and 1-3 are the left-hand keys
+ * J K L I serve keyboard-only play; Shift, R, M, C and 1-3 are the left-hand keys
  * for playing with the mouse in the right hand.
  */
 const KEYMAP: Record<string, Action[]> = {
@@ -31,6 +31,7 @@ const KEYMAP: Record<string, Action[]> = {
   Escape: ['start', 'cancel'],
   Backspace: ['cancel'],
   KeyM: ['select'],
+  KeyC: ['run'],
 };
 
 /** Keys and pad buttons that spell the test cheat (arrow keys only, not WASD). */
@@ -47,10 +48,10 @@ const PADMAP: Action[][] = [
   ['guard'], // 5 RB
   ['lock'], // 6 LT
   ['guard'], // 7 RT
-  ['map'], // 8 back / select
+  ['select'], // 8 back / select
   ['start'], // 9 start
-  ['select'], // 10 L3
-  ['lock'], // 11 R3
+  ['run'], // 10 L3
+  ['map'], // 11 R3
   ['up'], ['down'], ['left'], ['right'], // 12-15 d-pad
 ];
 
@@ -58,11 +59,11 @@ const PADMAP: Action[][] = [
 export const KEY_LABELS: Record<Device, Record<string, string>> = {
   kb: {
     ATTACK: 'J', STRONG: 'K', GUARD: 'SHIFT / L', DODGE: 'SPACE', ITEM: 'R / I', ACT: 'E', LOCK: 'Q', MAP: 'TAB',
-    START: 'ENTER', SELECT: 'M', CONFIRM: 'ENTER', CANCEL: 'ESC', MOVE: 'WASD',
+    START: 'ENTER', SELECT: 'M', CONFIRM: 'ENTER', CANCEL: 'ESC', MOVE: 'WASD', RUN: 'C',
   },
   pad: {
-    ATTACK: 'X', STRONG: 'Y', GUARD: 'RB', DODGE: 'B', ITEM: 'LB', ACT: 'A', LOCK: 'LT', MAP: 'BACK',
-    START: 'START', SELECT: 'L3', CONFIRM: 'A', CANCEL: 'B', MOVE: 'L-STICK',
+    ATTACK: 'X', STRONG: 'Y', GUARD: 'RB', DODGE: 'B', ITEM: 'LB', ACT: 'A', LOCK: 'LT', MAP: 'R3',
+    START: 'START', SELECT: 'BACK', CONFIRM: 'A', CANCEL: 'B', MOVE: 'L-STICK', RUN: 'L3',
   },
 };
 

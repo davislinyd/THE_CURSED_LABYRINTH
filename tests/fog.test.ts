@@ -16,10 +16,10 @@ describe('fog of war (isometric areas)', () => {
     const got = liftFog(v, 'world', WORLD_W * WT, WORLD_H * WT, worldMid(10), worldMid(12));
     expect(got).toContainEqual([10, 12]);
     for (const [bx, by] of got) expect(Math.hypot(bx - 10, by - 12) * FOG_BLOCK * SUB).toBeLessThanOrEqual(FOG_SIGHT);
-    expect(v['w:13,12']).toBe(true); // 18 m east
-    expect(v['w:14,12']).toBeUndefined(); // 24 m east
-    expect(v['w:12,14']).toBe(true); // 17 m south-east
-    expect(v['w:13,14']).toBeUndefined(); // 21.6 m
+    expect(v['w:12,12']).toBe(true); // 12 m east
+    expect(v['w:13,12']).toBeUndefined(); // 18 m east
+    expect(v['w:11,13']).toBe(true); // 8.5 m south-east
+    expect(v['w:12,13']).toBeUndefined(); // 13.4 m
     expect(Object.keys(v)).toHaveLength(got.length);
     expect(liftFog(v, 'world', WORLD_W * WT, WORLD_H * WT, worldMid(10), worldMid(12))).toEqual([]);
   });

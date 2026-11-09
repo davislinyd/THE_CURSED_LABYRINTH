@@ -3,6 +3,7 @@ import { BUILD_ENEMY, EnemyKindCh1 } from '../actors/Enemies';
 import { AutoInput, HeroActor } from '../actors/HeroActor';
 import { BLOOD, EYE_Y, FOES, Foe } from '../combat/Foe';
 import { HIT_STOP } from '../combat/HeroMachine';
+import { harm, toughness } from '../core/Difficulty';
 import type { Game } from '../core/Game';
 import { DungeonId, ITEM_NAMES, ItemId, KEY_ITEM_INFO, hasItem, swordDamage } from '../core/GameState';
 import { Scene } from '../core/SceneManager';
@@ -146,7 +147,7 @@ export class DungeonScene implements Scene {
 
     const loc = g.state.location;
     const start = loc.mode === 'dungeon' && loc.id === this.id ? loc : { ...d.start };
-    this.hero = new HeroActor(center(start.x), center(start.y));
+    this.hero = new HeroActor(center(start.x), center(start.y), this.game.fatigue);
     this.hero.yaw = DIR_YAW[start.dir];
     this.heroShadow = blobShadow(1.3);
     s3.add(this.hero.root, this.heroShadow, this.hero.effects);
@@ -294,7 +295,7 @@ export class DungeonScene implements Scene {
       if (e === 'use') this.useItem();
       if (e === 'dust') this.fx.dust(hero.x, hero.z);
     }
-    if (hero.state === 'run' && this.frame % 20 === 0) g.sfx('step_dirt', { vol: 0.35 });
+    if (hero.state === 'run' && this.frame % Math.round(20 / hero.fatigue.pace) === 0) g.sfx('step_dirt', { vol: 0.35 });
     this.strikeBarriers();
     this.strikeFoes();
     // the hero stands still while a message or question is open, so the foes wait too
@@ -505,9 +506,10 @@ export class DungeonScene implements Scene {
     }
   }
 
+  /** `n`: the blow's (or trap's) damage on Normal. */
   private damage(n: number): void {
     const g = this.game;
-    g.state.life = Math.max(0, g.state.life - n);
+    g.state.life = Math.max(0, g.state.life - harm(g.state.difficulty, n));
     g.sfx('hit_heavy', { pitch: 0.9 });
     g.scenes.flash(0.6, 0, 0, 5);
     this.cam.shake(0.3);
@@ -520,7 +522,7 @@ export class DungeonScene implements Scene {
 
   private spawn(kind: EnemyKindCh1, x: number, z: number): Foe {
     const model = BUILD_ENEMY[kind]();
-    const f = new Foe(kind, x, z, model);
+    const f = new Foe(kind, x, z, model, toughness(this.game.state.difficulty, FOES[kind].hp));
     f.yaw = Math.atan2(this.hero.x - x, this.hero.z - z);
     model.root.position.set(x, 0, z);
     // meshes only: a wisp's own point light must not get a shadow map
@@ -944,7 +946,7 @@ export class DungeonScene implements Scene {
         ui.diamond(x, y - r - 6, 4, COL.red);
       }
     }
-    drawHud(ui, s, s.keys[this.id]);
+    drawHud(ui, s, s.keys[this.id], this.game.fatigue);
     if (this.game.settings.minimap) drawMinimap(ui, this.mapView());
     if (this.prompt && !this.msg.active && !this.ask) {
       const [x, y, w, h] = this.promptRect();

@@ -40,7 +40,7 @@ export class PauseMenu implements Scene {
       if (m.click >= 0) this.cursor = m.click;
       g.sfx('confirm');
       if (this.cursor === 0) this.close();
-      else if (this.cursor === 1) g.scenes.push(new OptionsMenu(g));
+      else if (this.cursor === 1) g.scenes.push(new OptionsMenu(g, true));
       else if (this.cursor === 2) g.scenes.push(new ControlsScreen(g));
       else this.confirm = new YesNo(t('QUIT TO TITLE? UNSAVED PROGRESS IS LOST.'), 1, COL.red);
     }

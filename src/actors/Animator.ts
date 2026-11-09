@@ -5,6 +5,10 @@ export class Animator<N extends string> {
   readonly mixer: THREE.AnimationMixer;
   private readonly actions = new Map<N, THREE.AnimationAction>();
   current: N | null = null;
+  /** Weight of each clip in the pose (they always add up to 1). */
+  private readonly weights = new Map<N, number>();
+  /** Weight per second the current clip gains in its crossfade. */
+  private rate = 10;
 
   constructor(root: THREE.Object3D, clips: Record<N, THREE.AnimationClip>, once: readonly N[] = []) {
     this.mixer = new THREE.AnimationMixer(root);
@@ -18,17 +22,45 @@ export class Animator<N extends string> {
     }
   }
 
-  /** Switch to `name` over `fade` seconds; `restart` replays it if it is already playing. */
+  /**
+   * Switch to `name` over `fade` seconds; `restart` replays it if it is already playing.
+   * The weights move on from where they are, so a crossfade cut short by another never
+   * jumps, and a looping clip still fading out takes up again where it is.
+   */
   play(name: N, fade = 0.1, restart = false): void {
     if (name === this.current && !restart) return;
     const next = this.actions.get(name)!;
-    const prev = this.current ? this.actions.get(this.current) : null;
-    next.reset().setEffectiveWeight(1).play();
-    if (prev && prev !== next) next.crossFadeFrom(prev, fade, false);
+    if (!this.weights.has(name) || next.loop === THREE.LoopOnce) next.reset();
+    next.play();
+    if (!this.weights.has(name)) this.weights.set(name, this.current === null ? 1 : 0);
     this.current = name;
+    this.rate = 1 / fade;
+  }
+
+  /** Playback speed of a clip; negative plays it backwards. */
+  speed(name: N, scale: number): void {
+    this.actions.get(name)!.timeScale = scale;
   }
 
   update(dt: number): void {
+    const cur = this.current;
+    if (cur !== null) {
+      // the current clip gains weight; the others share what is left as they had it
+      let rest = 0;
+      for (const [name, w] of this.weights) if (name !== cur) rest += w;
+      const now = rest > 0 ? Math.min(1, this.weights.get(cur)! + dt * this.rate) : 1;
+      for (const [name, w] of this.weights) {
+        const v = name === cur ? now : (w * (1 - now)) / rest;
+        const a = this.actions.get(name)!;
+        if (v > 1e-4 || name === cur) {
+          this.weights.set(name, v);
+          a.setEffectiveWeight(v);
+        } else {
+          this.weights.delete(name);
+          a.stop();
+        }
+      }
+    }
     this.mixer.update(dt);
   }
 }
