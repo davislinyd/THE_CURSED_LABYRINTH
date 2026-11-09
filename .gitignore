@@ -5,3 +5,5 @@ dist/
 .ai/status.json
 .playwright-mcp/
 assets-src/
+# Blender's backup copies when a .blend is saved over (the .blend itself is tracked)
+*.blend[0-9]*
