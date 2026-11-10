@@ -94,10 +94,10 @@ import simd
                 if g.area.thirdPerson {
                     camera.components.remove(OrthographicCameraComponent.self)
                     camera.components.set(PerspectiveCameraComponent(near:0.08,far:95,fieldOfViewInDegrees:61))
-                    cameraPosition=[world.save.position.x,3.3,world.save.position.z+6]
+                    cameraPosition=thirdPersonCameraPosition(world,at:world.save.position)
                 }else{
                     camera.components.remove(PerspectiveCameraComponent.self)
-                    var ortho=OrthographicCameraComponent();ortho.scale=10.5;camera.components.set(ortho)
+                    var ortho=OrthographicCameraComponent();ortho.scale=7.2;camera.components.set(ortho)
                     cameraPosition=[world.save.position.x+14,19,world.save.position.z+14]
                 }
             }catch{assetFailures.append(error.localizedDescription);session?.error=error.localizedDescription}
@@ -215,13 +215,8 @@ import simd
         if fogCount != world.save.visited.count{fogCount=world.save.visited.count;ink.updateFog(world)}
         let target:SIMD3<Float>,desired:SIMD3<Float>
         if third{
-            let yaw=world.cameraYaw,offset=Point(x:-sin(yaw),z:-cos(yaw));var distance=world.grid.cameraClearance(from:p,direction:offset,maximum:6.2,flags:world.save.flags)
-            while distance>0.3 {
-                let behind=p+offset*(distance+0.3),outsideArena=world.save.area == .boss && behind.distance(Point(x:24,z:24))>10.5
-                if !outsideArena && world.grid.visible(p,behind,flags:world.save.flags){break};distance-=0.2
-            }
-            let elevated:Float=distance<3 ? (3-distance)*0.35:0
-            desired=[p.x+offset.x*distance,2.4+distance*sin(world.cameraPitch)+elevated,p.z+offset.z*distance]
+            let yaw=world.cameraYaw
+            desired=thirdPersonCameraPosition(world,at:p)
             target=[p.x+sin(yaw)*1.1,1.3,p.z+cos(yaw)*1.1]
         }else{desired=[p.x+14,19,p.z+14];target=[p.x,0.25,p.z]}
         cameraPosition+=(desired-cameraPosition)*min(1,delta*(third ? 12:9))
@@ -236,6 +231,15 @@ import simd
         if reduced != lowPower{reduced=lowPower;moon.shadow=lowPower ? nil:DirectionalLightComponent.Shadow(maximumDistance:24,depthBias:1.5)}
         kick*=0.8;shake=max(0,shake-delta)
         ink.update(camera:camera.transform.matrix,thirdPerson:third,reduced:lowPower,time:time)
+    }
+    private func thirdPersonCameraPosition(_ world:GameWorld,at p:Point)->SIMD3<Float> {
+        let yaw=world.cameraYaw,offset=Point(x:-sin(yaw),z:-cos(yaw));var distance=world.grid.cameraClearance(from:p,direction:offset,maximum:4.2,flags:world.save.flags)
+        while distance>0.3 {
+            let behind=p+offset*(distance+0.3),outsideArena=world.save.area == .boss && behind.distance(Point(x:24,z:24))>10.5
+            if !outsideArena && world.grid.visible(p,behind,flags:world.save.flags){break};distance-=0.2
+        }
+        let elevated:Float=distance<3 ? (3-distance)*0.35:0
+        return [p.x+offset.x*distance,1.8+distance*sin(world.cameraPitch)+elevated,p.z+offset.z*distance]
     }
     private func updateLights(_ p:Point,third:Bool){
         let anchors=lampAnchors.sorted{Point(x:$0.position[0],z:$0.position[2]).distance(p)<Point(x:$1.position[0],z:$1.position[2]).distance(p)}

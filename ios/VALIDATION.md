@@ -1,5 +1,7 @@
 # iPhone 原生版驗證
 
+最新交付為 `1.0` build `10`；本次鏡頭調整與使用者中斷測試紀錄見末節。以下原生美術與戰鬥補強結果保留為 build `9` 的歷史紀錄。
+
 測試日期：2026-11-10（Asia/Taipei）。本輪針對原生初版過度簡化的模型、動畫、場景及戰鬥表現進行補強。
 
 ## 交付與隔離
@@ -41,3 +43,14 @@
 - App 只載入封裝資源，運行不依賴網頁或開發伺服器；未切換裝置飛航模式。
 - 鎖屏、來電等真實音訊中斷、完整 VoiceOver 及主觀音質尚未實測。
 - 使用原版模型與動畫資產；Metal 後製、碰撞與 Boss 弱點是原生實作，未宣稱與網頁版逐像素或逐幀完全相同。
+
+## 2026-11-10 鏡頭調整（build 10）
+
+- 正交鏡頭 scale `10.5 → 7.2`；第三人稱距離上限 `6.2 → 4.2`、基礎高度 `2.4 → 1.8`。視野維持 `61°`，注視點及避障規則保留；進場與跟隨共用距離、高度及避障計算。
+- 同一份主角模型、同一位置、朝向與 idle 第 0 秒姿勢的投影計算：正交高度約增加 **45.8%**，第三人稱開闊處約增加 **50.8%**。這是固定姿勢的幾何比較；貼牆、動畫與手動俯仰會影響實際比例。證據：`build/camera-10-projection.json`。既有 XCTest 的 app 截圖有方向／裁切異常，未用於前後像素量測。
+- 既有 7 組 Swift 核心測試通過，含三種難度整章案例；iOS 建置與既有實機 UI 回歸通過。證據：`build/camera-10-core-tests.log`、`build/camera-10-build.log`、`build/camera-10-UI.xcresult`。
+- iPhone 15 Pro／iOS 27.0.1 短程巡迴完成一次第一章，metrics 累積 156.4 秒、通關 1 次、資產錯誤為空、Metal 後製啟用。實機截圖留於 `build/camera-10-tour/`，已檢視平原、村莊、古道、洞窟與 Boss 構圖；Boss 戰圖為 `126.png`。區域以畫面標題辨識，metrics 區域可能落後截圖。
+- 洞窟以正常輸入產生的獨立測試存檔，執行四次水平旋轉、俯仰、三方向搖桿移動、攻擊、閃避及暫停，XCTest 通過；採樣畫面未見鏡頭穿牆，主角軀幹未被左右操作鍵遮住。入口互動提示可能覆蓋腿部。證據：`build/camera-10-controls.xcresult`、`build/camera-10-manual/`。暫時驗證工具留於忽略的 build 目錄，正式測試原始碼未修改。
+- **依使用者指示停止追加測試並直接交付。** Boss 地面預警專項尚未執行；逐幀切換平順度、同位置實機前後像素量測及真人手感仍未完成驗收。未追加長時間測試。
+- 測試使用 `--ui-testing` 的 UITestJourney；正式 Journey 存檔前後 SHA-256 相同，證據：`build/camera-10-player-before.json` 與 `build/camera-10-player-after.json`。
+- 沿用 marketing version `1.0` 與遞增 build 慣例，`project.yml` 的 build `9 → 10`，同步產生 Xcode 專案與 App Info.plist。僅建置並安裝開發簽章 `.app`；未建立 ZIP、IPA 或商店發佈，網頁版不變。
