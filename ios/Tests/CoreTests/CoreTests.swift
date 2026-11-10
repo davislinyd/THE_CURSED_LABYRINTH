@@ -69,6 +69,21 @@ private func content() throws -> Content {
     #expect(w.save.completed);#expect(w.save.keyItems.isSuperset(of:["mirror","candle","compass","map_d1"]))
     #expect(driver.milestones.contains("shop"));#expect(driver.milestones.contains("inn"))
 }
+@Test(arguments:Difficulty.allCases) func savedDifficultySelectsBossAppearance(difficulty:Difficulty) throws {
+    let root=URL(fileURLWithPath:#filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+    let dir=root.appendingPathComponent("build/test-stores/"+UUID().uuidString)
+    defer {try? FileManager.default.removeItem(at:dir)}
+    let store=SaveStore(directory:dir)
+    var save=SaveState();save.difficulty=difficulty;save.area = .boss;save.position=Point(x:24,z:32)
+    try store.save(save)
+    let restored=try #require(store.load()),world=GameWorld(content:try content(),save:restored)
+    let expected=difficulty == .hard ? "rotroot_wraith":"rotroot"
+    #expect(world.save.difficulty.bossArt==expected)
+    #expect(world.save.difficulty.bossTitle==(difficulty == .hard ? "WRAITH WARLORD":"FALLEN WARLORD"))
+    #expect(world.boss?.kind=="rotroot")
+    let art=try JSONSerialization.jsonObject(with:Data(contentsOf:root.appendingPathComponent("Resources/Generated/Art/"+expected+".json"))) as? [String:Any]
+    #expect(art?["name"] as? String==expected)
+}
 @Test func hitStopRetainsDodgeInput()throws{
     let w=GameWorld(content:try content())
     w.spawn("ghoul",id:"buffer-fixture",at:w.save.position+Point(x:0,z:-1.5))
@@ -79,3 +94,51 @@ private func content() throws -> Content {
     for _ in 0..<12 {w.update(InputFrame());if w.hero.state=="dodge"{break}}
     #expect(w.hero.state=="dodge")
 }
+#if DEBUG
+@Test func bossBuildsMomentumAndTurnsBeforeAttacking()throws{
+    let world=GameWorld(content:try content(),save:DeveloperBossTest.save(difficulty:.normal))
+    world.update(InputFrame())
+    #expect(world.enemies[0].velocity.length>0 && world.enemies[0].velocity.length<=0.081)
+    world.update(InputFrame());#expect(world.enemies[0].velocity.length<=0.161)
+    world.save.position=Point(x:24,z:26);world.enemies[0].position=Point(x:24,z:21)
+    world.enemies[0].yaw = .pi;world.enemies[0].cooldown=0;world.enemies[0].state="idle"
+    world.update(InputFrame())
+    #expect(world.enemies[0].state != "attack")
+    #expect(abs(wrapped(world.enemies[0].yaw-Float.pi))<=0.036)
+}
+@Test(arguments:Difficulty.allCases) func bossPursuesRepositionsAndHonorsAttackLock(difficulty:Difficulty)throws{
+    let world=GameWorld(content:try content(),save:DeveloperBossTest.save(difficulty:difficulty))
+    let initial=try #require(world.boss)
+    for _ in 0..<120 {world.update(InputFrame());world.events.removeAll()}
+    let pursued=try #require(world.boss)
+    #expect(pursued.position.distance(world.save.position)<initial.position.distance(world.save.position)-1)
+    #expect(pursued.state=="chase")
+    world.enemies[0].state="attack";world.enemies[0].tick=0
+    world.enemies[0].attackStart=48;world.enemies[0].attackEnd=57;world.enemies[0].attackDuration=108
+    let locked=world.enemies[0].position
+    for _ in 0..<20 {world.update(InputFrame())}
+    #expect(world.enemies[0].position==locked)
+    world.save.position=Point(x:24,z:28);world.enemies[0].position=Point(x:24,z:24)
+    world.enemies[0].state="idle";world.enemies[0].cooldown=999
+    for _ in 0..<30 {world.update(InputFrame())}
+    #expect(abs(world.enemies[0].position.x-24)>0.2)
+    world.save.position=Point(x:31,z:29);world.enemies[0].position=Point(x:32,z:24)
+    for _ in 0..<120 {
+        world.update(InputFrame())
+        #expect(world.enemies[0].position.distance(Point(x:24,z:24))<=8.001)
+        #expect(world.enemies[0].position.distance(world.save.position)>=1.799)
+    }
+}
+@Test(arguments:Difficulty.allCases) func developerBossTestStartsAndRetriesAtBoss(difficulty:Difficulty)throws{
+    let seed=DeveloperBossTest.save(difficulty:difficulty)
+    #expect(seed.valid);#expect(seed.area == .boss);#expect(seed.difficulty==difficulty)
+    #expect(!seed.completed);#expect(!seed.flags.contains("dead:boss:rotroot"))
+    let world=GameWorld(content:try content(),save:seed)
+    #expect(world.boss != nil);#expect(world.save.position==Point(x:24,z:32))
+    world.save.life=0;world.respawn()
+    #expect(world.save.area == .boss);#expect(world.boss != nil);#expect(world.save.life==world.save.maxLife)
+    world.save.flags.insert("dead:boss:rotroot");world.save.completed=true
+    let reset=GameWorld(content:try content(),save:DeveloperBossTest.save(difficulty:difficulty))
+    #expect(reset.boss != nil);#expect(!reset.save.completed)
+}
+#endif

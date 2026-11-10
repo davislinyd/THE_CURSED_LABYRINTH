@@ -85,6 +85,7 @@ struct Enemy: Sendable, Identifiable {
     var cooldown = 45
     var lastSwing = -1
     var aim = Point()
+    var velocity = Point()
     var attackKind = 0
     var dealt = false
     var attackStart=30

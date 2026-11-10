@@ -41,6 +41,9 @@ struct GameView:View {
             } else {ProgressView(session.text("LOADING")).tint(gold)}
             if session.settingsVisible {SettingsPanel(session:session)}
             if session.difficultyVisible {difficulty}
+            #if DEBUG
+            if session.developerVisible {developerTests}
+            #endif
             if credits {creditsPanel}
         }
         .foregroundStyle(paper)
@@ -67,6 +70,9 @@ struct GameView:View {
                     if session.hasSave {menuButton("CONTINUE",id:"continue"){session.continueGame()}}
                     menuButton("NEW JOURNEY",id:"new-game"){if session.hasSave {confirmNew=true}else{session.difficultyVisible=true}}
                     menuButton("SETTINGS",id:"settings"){session.settingsVisible=true}
+                    #if DEBUG
+                    menuButton("DEVELOPER TEST",id:"developer-tests"){session.developerVisible=true}
+                    #endif
                     Button(session.text("CREDITS")){credits=true}.font(.system(size:12)).foregroundStyle(gold).padding(.top,10)
                 }.frame(width:220)
             }.padding(.horizontal,44)
@@ -103,9 +109,12 @@ struct GameView:View {
                     }.frame(width:160).padding(11).background(ink.opacity(0.72),in:RoundedRectangle(cornerRadius:10))
                     Spacer()
                     VStack(spacing:5) {
-                        Text(session.text(session.world.save.area.title)).font(.system(size:16,weight:.medium,design:.serif)).tracking(2).shadow(color:.black,radius:3)
+                        Text(session.text(session.areaTitle)).font(.system(size:16,weight:.medium,design:.serif)).tracking(2).shadow(color:.black,radius:3)
                         if let boss=session.world.boss {meter(boss.hp/boss.maxHP,color:vermilion,height:5).frame(width:200)}
                         if session.lowPower {Text(session.text("REDUCED EFFECTS")).font(.system(size:9)).foregroundStyle(gold)}
+                        #if DEBUG
+                        if session.developerTesting {Text(session.text("DEVELOPER TEST · NO SAVE")).font(.system(size:9)).foregroundStyle(gold).accessibilityIdentifier("developer.status").accessibilityValue(session.renderer.loadedBossArt ?? "")}
+                        #endif
                     }.padding(.top,10)
                     Spacer()
                     Button {session.world.panel = .map;session.touch.reset();session.revision+=1} label:{Minimap(world:session.world,revision:session.mapRevision).frame(width:100,height:80).background(ink.opacity(0.8),in:RoundedRectangle(cornerRadius:8))}.accessibilityIdentifier("map")
@@ -131,6 +140,14 @@ struct GameView:View {
                 VStack(spacing:12) {
                     menuButton("RESUME",id:"resume"){session.closePanel()}
                     menuButton("SETTINGS",id:"pause.settings"){session.settingsVisible=true}
+                    #if DEBUG
+                    if session.developerTesting {
+                        HStack {
+                            Button(session.text("RESTART BOSS")){session.startBossTest(session.world.save.difficulty)}.buttonStyle(PaperButton()).accessibilityIdentifier("developer.restart")
+                            Button(session.text("SWITCH FORM")){session.developerVisible=true}.buttonStyle(PaperButton()).accessibilityIdentifier("developer.switch")
+                        }
+                    }
+                    #endif
                     menuButton("RETURN TO TITLE",id:"return-title"){session.title()}
                     Text(session.text("TOUCH GUIDE")).font(.system(size:11)).foregroundStyle(gold).multilineTextAlignment(.center)
                 }.frame(width:330)
@@ -156,12 +173,29 @@ struct GameView:View {
         case .complete:
             Modal(title:session.text("CHAPTER ONE COMPLETE")){VStack(spacing:16){Image(systemName:"sun.max.circle").font(.system(size:48)).foregroundStyle(gold);Text(session.text("THE BRONZE MIRROR")).font(.system(size:24,design:.serif));Button(session.text("RETURN TO TITLE")){session.title()}.buttonStyle(PaperButton()).accessibilityIdentifier("chapter.complete")}}
         case .map:
-            Modal(title:session.text("MAP")){HStack(spacing:24){Minimap(world:session.world,revision:session.revision).frame(width:300,height:230);VStack(alignment:.leading,spacing:12){Text(session.text(session.world.save.area.title)).font(.system(size:18,design:.serif));ForEach(["herb","talisman","elixir"],id:\.self){id in Button{session.world.save.selectedItem=id;session.revision+=1}label:{HStack{Text(session.text(id.uppercased()));Spacer();Text("\(session.world.save.items[id,default:0])")}.foregroundStyle(session.world.save.selectedItem==id ? gold:paper)}};ForEach(session.world.save.keyItems.sorted(),id:\.self){Text(session.text($0.uppercased())).font(.system(size:12)).foregroundStyle(gold)};Button(session.text("CLOSE")){session.closePanel()}.buttonStyle(PaperButton()).accessibilityIdentifier("map.close")}.frame(width:200)}}
+            Modal(title:session.text("MAP")){HStack(spacing:24){Minimap(world:session.world,revision:session.revision).frame(width:300,height:230);VStack(alignment:.leading,spacing:12){Text(session.text(session.areaTitle)).font(.system(size:18,design:.serif));ForEach(["herb","talisman","elixir"],id:\.self){id in Button{session.world.save.selectedItem=id;session.revision+=1}label:{HStack{Text(session.text(id.uppercased()));Spacer();Text("\(session.world.save.items[id,default:0])")}.foregroundStyle(session.world.save.selectedItem==id ? gold:paper)}};ForEach(session.world.save.keyItems.sorted(),id:\.self){Text(session.text($0.uppercased())).font(.system(size:12)).foregroundStyle(gold)};Button(session.text("CLOSE")){session.closePanel()}.buttonStyle(PaperButton()).accessibilityIdentifier("map.close")}.frame(width:200)}}
         }
     }
     private var difficulty:some View {
         Modal(title:session.text("DIFFICULTY")){VStack(spacing:12){ForEach(Difficulty.allCases,id:\.self){d in Button{session.newGame(d)}label:{Text(session.text(d.rawValue.uppercased())).frame(width:220)}.buttonStyle(PaperButton()).accessibilityIdentifier("difficulty.\(d.rawValue)")};Button(session.text("BACK")){session.difficultyVisible=false}}}
     }
+    #if DEBUG
+    private var developerTests:some View {
+        Modal(title:session.text("DEVELOPER TEST")) {
+            VStack(spacing:16) {
+                Text(session.text("BOSS PRACTICE · PROGRESS IS NOT SAVED")).font(.system(size:12)).foregroundStyle(gold)
+                HStack(spacing:12) {
+                    ForEach(Difficulty.allCases,id:\.self){difficulty in
+                        Button {session.startBossTest(difficulty)} label:{
+                            VStack(spacing:7){Text(session.text(difficulty.rawValue.uppercased()));Text(session.text(difficulty.bossTitle)).font(.system(size:11))}.frame(width:130)
+                        }.buttonStyle(PaperButton()).accessibilityIdentifier("developer.boss.\(difficulty.rawValue)")
+                    }
+                }
+                Button(session.text("CLOSE")){session.developerVisible=false}.accessibilityIdentifier("developer.close")
+            }
+        }
+    }
+    #endif
     private var creditsPanel:some View {
         Modal(title:session.text("CREDITS")){VStack{ScrollView{Text((try? String(contentsOf:session.resourceRoot.appendingPathComponent("Licenses/CREDITS.md"),encoding:.utf8)) ?? "").font(.system(size:11)).frame(maxWidth:600,alignment:.leading)}.frame(height:210);Button(session.text("BACK")){credits=false}.buttonStyle(PaperButton())}}
     }

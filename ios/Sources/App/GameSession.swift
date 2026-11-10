@@ -14,6 +14,10 @@ import Observation
     var loaded=false
     var artReady=false
     var lowPower=false
+    private(set) var developerTesting=false
+    #if DEBUG
+    var developerVisible=false
+    #endif
     @ObservationIgnored var world:GameWorld!
     @ObservationIgnored var touch=TouchState()
     @ObservationIgnored let renderer=GameRenderer()
@@ -32,11 +36,13 @@ import Observation
     @ObservationIgnored var resourceRoot:URL!
     @ObservationIgnored private var saveTask:Task<Void,Never>?
     @ObservationIgnored private var defaults=UserDefaults.standard
+    @ObservationIgnored private var developerDirectory:URL!
     init() {
         do {
             guard let root=Bundle.main.resourceURL?.appendingPathComponent("Generated") else {throw CocoaError(.fileNoSuchFile)}
             resourceRoot=root;content=try Content.load(root.appendingPathComponent("chapter.json"))
             let support=try FileManager.default.url(for:.applicationSupportDirectory,in:.userDomainMask,appropriateFor:nil,create:true)
+            developerDirectory=support.appendingPathComponent("DeveloperJourney")
             let testing=ProcessInfo.processInfo.arguments.contains("--ui-testing")
             store=SaveStore(directory:support.appendingPathComponent(testing ? "UITestJourney":"Journey"))
             if testing {defaults=UserDefaults(suiteName:"com.davislinyd.labyrinth.uitests")!}
@@ -44,7 +50,10 @@ import Observation
             world=GameWorld(content:content,save:store.load() ?? SaveState())
             renderer.resourceRoot=root;renderer.session=self;audio.root=root
             #if DEBUG
-            if ProcessInfo.processInfo.arguments.contains("--validate") {
+            let arguments=ProcessInfo.processInfo.arguments
+            if let index=arguments.firstIndex(of:"--boss-test"),arguments.indices.contains(index+1),let difficulty=Difficulty(rawValue:arguments[index+1]) {
+                startBossTest(difficulty)
+            } else if arguments.contains("--validate") {
                 validation=ValidationDriver(loop:true);world=GameWorld(content:content);screen="game"
             }
             #endif
@@ -53,6 +62,7 @@ import Observation
     }
     var hasSave:Bool {store?.load() != nil}
     var zh:Bool {preferences.language=="zh"}
+    var areaTitle:String {world.save.area == .boss ? world.save.difficulty.bossTitle:world.save.area.title}
     var controlRevision:Int {
         var hasher=Hasher();hasher.combine(preferences.language);hasher.combine(world.save.selectedItem)
         hasher.combine(world.save.items[world.save.selectedItem]);hasher.combine(world.prompt?.kind);hasher.combine(world.prompt?.label)
@@ -64,7 +74,8 @@ import Observation
     }
     func text(_ key:String)->String {
         let local:[String:String]=[
-            "HAIYA PLAINS":"灰谷平原","ROTWOOD ROAD":"朽木古道","ROTROOT":"朽根老樹","PLAY":"開始旅程","CONTINUE":"繼續旅程","SETTINGS":"設定","BACK":"返回","RESUME":"繼續遊戲","NEW JOURNEY":"新的旅程","DIFFICULTY":"選擇難度","EASY":"簡單","NORMAL":"一般","HARD":"困難","ATTACK":"斬","STRONG":"重擊","GUARD":"防禦","DODGE":"閃避","ITEM":"道具","INTERACT":"調查","MAP":"地圖","PAUSE":"暫停","TALK":"交談","EXAMINE":"調查","ENTER VILLAGE":"進入村莊","LEAVE VILLAGE":"離開村莊","ENTER GROTTO":"進入洞窟","LEAVE GROTTO":"離開洞窟","OPEN CHEST":"開啟寶箱","OPEN DOOR":"開門","FACE THE GUARDIAN":"挑戰守護者","BREAK THE BOARDS":"擊破木板","STRIKE THE CRACKED BOARDS":"揮刀擊破裂開的木板","REST":"休息","HERB":"藥草","ELIXIR":"靈藥","TALISMAN":"符咒","COMPASS":"磁石","CANDLE":"幽靈燭","MAP_D1":"洞窟地圖","MIRROR":"青銅鏡","YOUR PATH IS RECORDED":"旅途已記錄","THE SPIRITS REST":"亡靈已安息","THE GUARDIAN IS AT REST":"守護者已安息","NOT ENOUGH GOLD":"金錢不足","NO ITEMS LEFT":"道具已用完","LIFE IS FULL":"生命已全滿","LIFE INCREASED":"生命上限增加","FOUND GOLD":"獲得金錢","THE REST OF THE JOURNEY LIES BEYOND CHAPTER ONE.":"前方的旅程將在後續章節展開。","CHAPTER ONE COMPLETE":"第一章完成","THE BRONZE MIRROR":"封印 I・青銅鏡","RETURN TO TITLE":"返回標題","FALLEN":"燈火未熄","TRY AGAIN":"再次出發","DEATH COST":"回到檢查點，失去一半金錢。","MUSIC":"音樂","SOUND":"音效","HAPTICS":"觸覺回饋","CAMERA":"鏡頭靈敏度","LANGUAGE":"語言","BUY":"購買","REST FOR 10 GOLD":"花費 10 金休息","SHOP":"行商","INN":"旅店","CLOSE":"關閉","SKIP":"略過","NEXT":"下一頁","JOURNEY":"旅途","SAVED":"已存檔","SEEK THE FIRST SEAL":"穿越朽木古道，尋回第一枚封印","TOUCH GUIDE":"左拇指移動・右側揮刀與閃避・按住防禦可彈開攻擊","START ANEW?":"重新開始會取代此 App 的旅程。","CANCEL":"取消","CONFIRM":"確定","LOADING":"點亮幽燈…","SAVE FAILED":"存檔失敗，請保留 App 並重試。","RETRY":"重試","CREDITS":"製作與授權","OFFLINE":"離線冒險","REDUCED EFFECTS":"節能畫質"]
+            "DEVELOPER TEST":"開發者測試","DEVELOPER TEST · NO SAVE":"開發者測試・不儲存進度","BOSS PRACTICE · PROGRESS IS NOT SAVED":"直接挑戰 Boss，進度不會寫入正式存檔。","RESTART BOSS":"重設戰鬥","SWITCH FORM":"切換型態",
+            "HAIYA PLAINS":"灰谷平原","ROTWOOD ROAD":"朽木古道","FALLEN WARLORD":"戰死武將","WRAITH WARLORD":"鬼化武將","PLAY":"開始旅程","CONTINUE":"繼續旅程","SETTINGS":"設定","BACK":"返回","RESUME":"繼續遊戲","NEW JOURNEY":"新的旅程","DIFFICULTY":"選擇難度","EASY":"簡單","NORMAL":"一般","HARD":"困難","ATTACK":"斬","STRONG":"重擊","GUARD":"防禦","DODGE":"閃避","ITEM":"道具","INTERACT":"調查","MAP":"地圖","PAUSE":"暫停","TALK":"交談","EXAMINE":"調查","ENTER VILLAGE":"進入村莊","LEAVE VILLAGE":"離開村莊","ENTER GROTTO":"進入洞窟","LEAVE GROTTO":"離開洞窟","OPEN CHEST":"開啟寶箱","OPEN DOOR":"開門","FACE THE GUARDIAN":"挑戰守護者","BREAK THE BOARDS":"擊破木板","STRIKE THE CRACKED BOARDS":"揮刀擊破裂開的木板","REST":"休息","HERB":"藥草","ELIXIR":"靈藥","TALISMAN":"符咒","COMPASS":"磁石","CANDLE":"幽靈燭","MAP_D1":"洞窟地圖","MIRROR":"青銅鏡","YOUR PATH IS RECORDED":"旅途已記錄","THE SPIRITS REST":"亡靈已安息","THE GUARDIAN IS AT REST":"守護者已安息","NOT ENOUGH GOLD":"金錢不足","NO ITEMS LEFT":"道具已用完","LIFE IS FULL":"生命已全滿","LIFE INCREASED":"生命上限增加","FOUND GOLD":"獲得金錢","THE REST OF THE JOURNEY LIES BEYOND CHAPTER ONE.":"前方的旅程將在後續章節展開。","CHAPTER ONE COMPLETE":"第一章完成","THE BRONZE MIRROR":"封印 I・青銅鏡","RETURN TO TITLE":"返回標題","FALLEN":"燈火未熄","TRY AGAIN":"再次出發","DEATH COST":"回到檢查點，失去一半金錢。","MUSIC":"音樂","SOUND":"音效","HAPTICS":"觸覺回饋","CAMERA":"鏡頭靈敏度","LANGUAGE":"語言","BUY":"購買","REST FOR 10 GOLD":"花費 10 金休息","SHOP":"行商","INN":"旅店","CLOSE":"關閉","SKIP":"略過","NEXT":"下一頁","JOURNEY":"旅途","SAVED":"已存檔","SEEK THE FIRST SEAL":"穿越朽木古道，尋回第一枚封印","TOUCH GUIDE":"左拇指移動・右側揮刀與閃避・按住防禦可彈開攻擊","START ANEW?":"重新開始會取代此 App 的旅程。","CANCEL":"取消","CONFIRM":"確定","LOADING":"點亮幽燈…","SAVE FAILED":"存檔失敗，請保留 App 並重試。","RETRY":"重試","CREDITS":"製作與授權","OFFLINE":"離線冒險","REDUCED EFFECTS":"節能畫質"]
         var result=zh ? local[key] ?? content?.translations[key] ?? key : key
         let replacements=["ITEM":textControl("ITEM"),"SELECT":textControl("ITEM"),"ATTACK":textControl("ATTACK"),"ACT":textControl("INTERACT"),"CONFIRM":textControl("INTERACT")]
         for (k,v) in replacements {result=result.replacingOccurrences(of:"{\(k)}",with:v)}
@@ -82,15 +93,32 @@ import Observation
     }
     func startPlaying() {screen="game";touch.reset();world.panel = .none;revision+=1}
     func closePanel() {world.panel = .none;touch.reset();revision+=1}
-    func pause() {guard screen=="game" else{return};world.pause();touch.reset();audio.pause();persist();revision+=1}
+    func pause() {guard screen=="game" else{return};world.pause();touch.reset();audio.pause();persist();if developerTesting{writeMetrics()};revision+=1}
     func background() {pause();accumulator=0;UIApplication.shared.isIdleTimerDisabled=false;writeMetrics()}
-    func title() {world.checkpointSafe();persist();screen="title";touch.reset();revision+=1}
+    func title() {
+        if developerTesting {
+            writeMetrics();developerTesting=false
+            world=GameWorld(content:content,save:store.load() ?? SaveState());renderer.invalidate()
+            metricsTime=0;metricsFrames=0;frameSamples=[];areaSamples=[:]
+        }else{world.checkpointSafe();persist()}
+        screen="title";touch.reset();accumulator=0;revision+=1
+    }
+    #if DEBUG
+    func startBossTest(_ difficulty:Difficulty) {
+        if developerTesting{writeMetrics()}
+        developerTesting=true;developerVisible=false;difficultyVisible=false;settingsVisible=false;validation=nil
+        world=GameWorld(content:content,save:DeveloperBossTest.save(difficulty:difficulty))
+        renderer.invalidate();touch.reset();accumulator=0;savedRevision = -1
+        metricsTime=0;metricsFrames=0;frameSamples=[];areaSamples=[:]
+        screen="game";revision+=1
+    }
+    #endif
     func changeSettings() {
         if let data=try? JSONEncoder().encode(preferences) {defaults.set(data,forKey:"preferences")}
         audio.setVolumes(preferences);revision+=1
     }
     func persist() {
-        guard let world,let store,validation==nil else {return}
+        guard let world,let store,validation==nil,!developerTesting else {return}
         do {try store.save(world.snapshot);savedRevision=world.saveRevision}
         catch {self.error=text("SAVE FAILED")}
     }
@@ -132,10 +160,14 @@ import Observation
         let p95=sorted.isEmpty ? 0 : sorted[min(sorted.count-1,Int(Double(sorted.count)*0.95))]*1000
         let perArea=areaSamples.mapValues{samples->[String:Double] in let sorted=samples.sorted();return["frames":Double(samples.count),"averageFPS":Double(samples.count)/max(0.001,samples.reduce(0,+)),"p95FrameMS":sorted[min(sorted.count-1,Int(Double(sorted.count)*0.95))]*1000]}
         let rendering=renderer.ink.diagnostics
-        let record:[String:Any]=["seconds":metricsTime,"frames":metricsFrames,"averageFPS":metricsTime>0 ? Double(metricsFrames)/metricsTime:0,"p95FrameMS":p95,"perArea":perArea,"woodblockShader":rendering.active,"renderPixels":[rendering.width,rendering.height],"assetFailures":renderer.assetFailures,"thermalState":ProcessInfo.processInfo.thermalState.rawValue,"lowPower":lowPower,"area":world.save.area.rawValue,"chapterComplete":world.save.completed,"validation":validation?.report ?? [:],"version":Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "?"]
-        if let data=try? JSONSerialization.data(withJSONObject:record,options:[.prettyPrinted,.sortedKeys]) {
-            try? FileManager.default.createDirectory(at:store.directory,withIntermediateDirectories:true)
-            try? data.write(to:store.directory.appendingPathComponent("metrics.json"),options:.atomic)
+        let record:[String:Any]=["seconds":metricsTime,"frames":metricsFrames,"averageFPS":metricsTime>0 ? Double(metricsFrames)/metricsTime:0,"p95FrameMS":p95,"perArea":perArea,"woodblockShader":rendering.active,"renderPixels":[rendering.width,rendering.height],"assetFailures":renderer.assetFailures,"thermalState":ProcessInfo.processInfo.thermalState.rawValue,"lowPower":lowPower,"area":world.save.area.rawValue,"chapterComplete":world.save.completed,"validation":validation?.report ?? [:],"version":Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "?","developerTest":developerTesting,"difficulty":world.save.difficulty.rawValue,"loadedBossArt":renderer.loadedBossArt ?? ""]
+        var output=record
+        if let boss=world.boss {output["bossPosition"]=[boss.position.x,boss.position.z];output["bossState"]=boss.state}
+        let directory=developerTesting ? developerDirectory!:store.directory
+        if let data=try? JSONSerialization.data(withJSONObject:output,options:[.prettyPrinted,.sortedKeys]) {
+            try? FileManager.default.createDirectory(at:directory,withIntermediateDirectories:true)
+            try? data.write(to:directory.appendingPathComponent("metrics.json"),options:.atomic)
+            if developerTesting{try? data.write(to:directory.appendingPathComponent("metrics-\(world.save.difficulty.rawValue).json"),options:.atomic)}
         }
     }
 }

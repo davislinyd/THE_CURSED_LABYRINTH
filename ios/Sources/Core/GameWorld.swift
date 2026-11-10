@@ -245,10 +245,12 @@ final class GameWorld {
             let boss=enemies[i].kind == "rotroot"
             let spec=content.foes[enemies[i].kind] ?? content.foes["ghoul"]!
             if enemies[i].state=="hurt" || enemies[i].state=="stagger" {
+                if boss {enemies[i].velocity=Point()}
                 if enemies[i].tick>(enemies[i].state=="stagger" ? (boss ? 120:60):21) {enemies[i].state="idle";enemies[i].tick=0}
                 continue
             }
             if enemies[i].state=="attack" {
+                if boss {enemies[i].velocity=Point()}
                 let active=enemies[i].attackStart,t=enemies[i].tick
                 if t>=active && t<enemies[i].attackEnd && !enemies[i].dealt {
                     if boss {
@@ -275,16 +277,38 @@ final class GameWorld {
             }
             enemies[i].cooldown=max(0,enemies[i].cooldown-1)
             if !boss && (dist>spec.sight || !grid.visible(enemies[i].position,save.position,flags:save.flags)) {enemies[i].state="idle";continue}
-            enemies[i].yaw+=clamp(wrapped(atan2(d.x,d.z)-enemies[i].yaw),-0.08,0.08)
-            let range:Float = boss ? 12 : spec.range
-            if dist<range && enemies[i].cooldown==0 {
+            let turn=wrapped(atan2(d.x,d.z)-enemies[i].yaw)
+            let turnRate:Float=boss ? (save.difficulty == .hard ? 0.055:0.035):0.08
+            enemies[i].yaw+=clamp(turn,-turnRate,turnRate)
+            let range:Float = boss ? 5.8 : spec.range
+            if dist<range && enemies[i].cooldown==0 && (!boss || abs(turn)<0.2) {
                 enemies[i].state="attack";enemies[i].tick=0;enemies[i].aim=d.normalized;enemies[i].dealt=false
                 if boss {
-                    enemies[i].attackKind=dist<3.6 ? 1:(areaTick/60)%2
+                    enemies[i].attackKind=dist<3.6 ? 1:dist>5.2 ? 0:(areaTick/60)%2
                     enemies[i].attackStart=enemies[i].attackKind==0 ? 48:40;enemies[i].attackEnd=enemies[i].attackKind==0 ? 57:60;enemies[i].attackDuration=enemies[i].attackKind==0 ? 108:96
-                    enemies[i].yaw=atan2(d.x,d.z)
+                    enemies[i].aim=Point(x:sin(enemies[i].yaw),z:cos(enemies[i].yaw));enemies[i].velocity=Point()
                 }
                 event("warning",enemies[i].position)
+            } else if boss {
+                let toward=d.normalized,radial:Float=clamp((dist-4.2)/1.6,-0.65,1)
+                let side:Float=(areaTick/180)%2==0 ? 1:-1
+                let tangent=Point(x:toward.z,z:-toward.x)*side*(0.65*clamp((6.5-dist)/1.5,0,1))
+                let speed:Float=save.difficulty == .hard ? 2.4:save.difficulty == .easy ? 1.5:1.8
+                let direction=toward*radial+tangent
+                let desired=abs(turn)>1 ? Point():(direction.length>1 ? direction.normalized:direction)*speed
+                let change=desired-enemies[i].velocity
+                enemies[i].velocity=enemies[i].velocity+change.normalized*min(change.length,4.8/60)
+                var next=grid.move(enemies[i].position,by:enemies[i].velocity/60,radius:1.65,flags:save.flags)
+                let center=Point(x:24,z:24),offset=next-center
+                if offset.length>8 {next=center+offset.normalized*8}
+                if (next.distance(save.position)>=1.8 || next.distance(save.position)>dist) && next.distance(enemies[i].position)>0.001 {
+                    if enemies[i].state != "chase" {enemies[i].tick=0}
+                    enemies[i].state="chase";enemies[i].position=next
+                }else{
+                    enemies[i].velocity=Point()
+                    if enemies[i].state != "idle" {enemies[i].tick=0}
+                    enemies[i].state="idle"
+                }
             } else if !boss {
                 enemies[i].state="chase"
                 var motion=Point()

@@ -36,6 +36,7 @@ import simd
     private var fogCount = -1
     private(set) var ready=false
     private(set) var assetFailures:[String]=[]
+    var loadedBossArt:String? {actors["boss:rotroot"]?.file.name}
     var resourceRoot:URL!
     weak var session:GameSession?
     private struct LampAnchor:Decodable {var position:[Float];var color:Int}
@@ -47,7 +48,7 @@ import simd
         guard !ready,library==nil else{return}
         library=NativeArtLibrary(directory:resourceRoot.appendingPathComponent("Art"))
         do {
-            try await library.preload(["hero","ghoul","hopper","wisp","crow","rotroot","npc_elder","npc_girl","npc_smith","npc_merchant","npc_keeper","scene_world","scene_village","scene_road","scene_dungeon","scene_boss"])
+            try await library.preload(["hero","ghoul","hopper","wisp","crow","rotroot","rotroot_wraith","npc_elder","npc_girl","npc_smith","npc_merchant","npc_keeper","scene_world","scene_village","scene_road","scene_dungeon","scene_boss"])
             player=try library.instance("hero")
             root.addChild(scenery);root.addChild(characters);root.addChild(effects);root.addChild(camera)
             characters.addChild(player.root);effects.addChild(trail);effects.addChild(targetRing);effects.addChild(danger)
@@ -153,12 +154,25 @@ import simd
         if footstep>1.8 && world.hero.state=="run"{footstep=0;world.event(third ? "step_dirt":"step_grass")}
         for enemy in world.enemies {
             let near=enemy.position.distance(p)<32
-            if actors[enemy.id]==nil && near {do {let actor=try library.instance(enemy.kind);characters.addChild(actor.root);actors[enemy.id]=actor}catch{assetFailures.append(enemy.kind)}}
+            let art=enemy.kind=="rotroot" ? world.save.difficulty.bossArt:enemy.kind
+            if actors[enemy.id]==nil && near {do {let actor=try library.instance(art);characters.addChild(actor.root);actors[enemy.id]=actor}catch{assetFailures.append(art)}}
             guard let actor=actors[enemy.id]else{continue}
             actor.root.position=[enemy.position.x,0,enemy.position.z];actor.root.orientation=simd_quatf(angle:enemy.yaw,axis:[0,1,0])
             actor.root.isEnabled=near && (enemy.alive || enemy.tick<90)
-            let state=enemy.kind=="rotroot" && enemy.state=="attack" ? (enemy.attackKind==0 ? "slam":"sweep"):enemy.state=="chase" ? "move":enemy.state
-            actor.animate(state,tick:enemy.tick,delta:renderDelta)
+            var state=enemy.kind=="rotroot" && enemy.state=="attack" ? (enemy.attackKind==0 ? "slam":"sweep"):enemy.state=="chase" ? "move":enemy.state
+            let walking=enemy.kind=="rotroot" && (enemy.state=="chase" || enemy.state=="idle")
+            var pivoting=false
+            if walking {
+                let forward=enemy.velocity.x*sin(enemy.yaw)+enemy.velocity.z*cos(enemy.yaw)
+                let side=enemy.velocity.x*cos(enemy.yaw)-enemy.velocity.z*sin(enemy.yaw)
+                let turn=wrapped(atan2(p.x-enemy.position.x,p.z-enemy.position.z)-enemy.yaw)
+                if enemy.velocity.length<0.15 && abs(turn)>0.2 {state=turn>0 ? "strafe_right":"strafe_left";pivoting=true}
+                else if abs(side)>abs(forward)*1.3 {state=side>0 ? "strafe_right":"strafe_left"}
+                else if forward < -0.1 {state="move_back"}
+            }
+            let locomotion=state.hasPrefix("move")||state.hasPrefix("strafe")
+            let pace:Float=walking && locomotion ? (pivoting ? 0.8:clamp(enemy.velocity.length/1.8,0.3,1.4)):1
+            actor.animate(state,tick:enemy.tick,delta:renderDelta,speed:pace)
             if !enemy.alive {actor.root.components.set(OpacityComponent(opacity:clamp(1-Float(max(0,enemy.tick-35))/45,0,1)))}
         }
         let ids=Set(world.enemies.map(\.id));for id in Array(actors.keys)where !ids.contains(id){actors.removeValue(forKey:id)?.root.removeFromParent()}

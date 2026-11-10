@@ -1,6 +1,27 @@
 # iPhone 原生版驗證
 
-最新交付為 `1.0` build `10`；本次鏡頭調整與使用者中斷測試紀錄見末節。以下原生美術與戰鬥補強結果保留為 build `9` 的歷史紀錄。
+## 2026-11-10 Boss 動作連續性與實機開發版（build 16）
+
+- 承接 build 15 的分節骨架與步態，本次修正手肘彎曲平面在抬手轉斬擊時的快速翻轉；接近解算奇異點時限制彎曲平面的旋轉速度。改用保持單調的三次曲線，減少經過中間姿勢時不必要的急停；以 60 Hz 烘焙一般節點動畫。
+- 兩型態各十組動作：待機、前進、後退、左右側移、斬落、橫掃、受擊、失衡、死亡。胸腰分節帶動肩肘腕，膝踝配合腳掌落點，披風與戰旗延遲跟隨。既有移動加速、有限轉身、步速累積播放與姿勢交叉淡入一併納入本次建置；攻擊命中及預警時序保留。
+- 幾何預算檢查通過：戰死武將 22,412 三角面／47 節點／2 材質，鬼化型 23,624 三角面／55 節點／3 材質。17 份資產、57 組動畫通過；另驗證循環首尾、逐幀關節連續性與攻擊落腳。原生斬落／橫掃的最大腳掌漂移小於 0.000002 m；此為離線幾何檢查，不代表實機視覺精度。證據：`build/art-validation.json`、`build/developer-16/art-validation-final.log`。
+- 原始 GLB 與原生節點動畫，每型態十組動作共 59 個取樣時間，最大世界矩陣差小於 0.000002。11 組 Swift 核心測試通過，含三種難度整章流程、追擊／側移／攻擊位置鎖定及開發者重試。Debug 建置成功。證據：`build/developer-16/native-animation-check.log`、`core-tests.log`、`build-final.log`。
+- 已安裝 iPhone 15 Pro 的 `1.0 (16)`；實機 XCTest 通過開發者入口、一般型載入、重設、切換困難鬼化型與返回標題。一般／困難各取樣約 10.6／11.3 秒，正確載入 `rotroot`／`rotroot_wraith`，資產錯誤為空，Metal 後製啟用。平均更新率約 56.7／53.1 fps，P95 更新間隔約 19.4／19.0 ms；短測不代表穩定 60 fps 或長時間效能。證據：`build/developer-16/UI-final.xcresult`、`verification-final.json`。
+- 正式 Journey 主存檔及備份的測試前後 SHA-256 相同。Blender 已檢視抬手、落斬及橫掃取樣；XCTest 附圖仍有方向／裁切問題，實機截圖改以 `devicectl` 擷取。真人連續操作、主觀重量感及逐幀實機觀感仍待驗收；目前為剛性部件動畫，未達到黑神話悟空／劍星的蒙皮變形與動畫製作品質。
+- 版本慣例維持 marketing version `1.0` 加遞增 build，本次由實機 build 15 交付至 16；同步 `project.yml`、產生的 Xcode 專案／App Info.plist、iOS README 與本紀錄。只產生並安裝開發簽章 `.app`，未製作 Release archive、IPA、ZIP 或上傳 TestFlight；網頁素材及既有未提交變更保留。
+
+## 2026-11-10 Boss 雙型態與舊化曲面模型（本機開發）
+
+- 透過 Blender MCP 在獨立 `scripts/blender/bosses.blend` 建立戰死武將與鬼化型，並提供重建腳本與兩份動畫 GLB。保留原有 `props.blend`；網頁模型與場景程式未修改。
+- 依使用者修正提高曲面、甲片、頭盔及手指的幾何密度，取消方塊輪廓；主要材質粗糙度 `0.98`、金屬度 `0.03`，採鏽斑、磨損與污漬圖集。戰死武將 20,632 三角面／25 節點／2 材質；鬼化型 21,844 三角面／33 節點／3 材質。含戰旗約 8.14 公尺，比例預覽使用 1.7 公尺人形。
+- 簡單／普通模式選用 `rotroot`，困難模式選用 `rotroot_wraith`；中英文標題分別顯示戰死武將／鬼化武將。Boss 邏輯身分、碰撞、數值與存檔 schema 未改，未新增 D2 流程或重寫故事。
+- 美術驗證通過：17 份原生模型／場景包、49 組動畫；兩款 Boss 均具有 `idle`、`slam`、`sweep`、`hurt`、`stagger`、`die`，時長沿用既有時序。另檢查巨物比例、遊戲 +Z 正面、霧面材質與每款 24,000 三角面／64 節點／3 材質預算。證據：`build/art-validation.json`。
+- 離線對照原始 GLB 與原生節點動畫，各模型涵蓋六組動作、35 個取樣時間；最大世界矩陣誤差小於 `0.000001`，沒有蒙皮網格。證據：`build/boss-art/native-animation-check.json`。這不等同 RealityKit 裝置執行驗證。
+- 八組核心測試通過，包含三種難度的獨立存檔外觀選擇與三種難度完整第一章流程。證據：`build/boss-art/build.log`。最終素材重建、驗證與 iOS Debug 建置成功：`build/boss-art/export-final.log`、`art-validation.log`、`prepare-final.log`、`build-final.log`。
+- Blender 已檢視雙型態比例、低角度與斬落／橫掃／死亡取樣畫面，保留於 `build/boss-art/`。本機沒有可用 iOS Simulator；本輪依範圍未安裝裝置，RealityKit 實機外觀、鏡頭遮擋、材質觀感與新增幾何量的效能仍未驗收。舊 build 的 fps 不作為本輪效能證據。
+- 版本慣例為 marketing version `1.0` 加遞增 build；本輪僅本機開發，維持 `1.0 (12)`。同步 Blender 來源、原始 GLB、iOS 美術匯出／驗證、難度選型、顯示名稱與本文件；沒有實機安裝、Release archive、TestFlight 上傳、IPA 或 ZIP。既有未提交文件及隱私宣告變更保留。
+
+以下為 build `10` 鏡頭調整與 build `9` 原生美術及戰鬥補強的歷史驗證紀錄。
 
 測試日期：2026-11-10（Asia/Taipei）。本輪針對原生初版過度簡化的模型、動畫、場景及戰鬥表現進行補強。
 

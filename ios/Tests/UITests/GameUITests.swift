@@ -2,6 +2,26 @@ import XCTest
 
 final class GameUITests:XCTestCase {
     override func setUpWithError() throws {continueAfterFailure=false}
+    @MainActor func testDeveloperBossPractice() throws {
+        let app=XCUIApplication();app.launchArguments=["--ui-testing"];app.launch()
+        XCTAssertTrue(app.buttons["developer-tests"].waitForExistence(timeout:60))
+        app.buttons["developer-tests"].tap()
+        app.buttons["developer.boss.normal"].tap()
+        let status=app.staticTexts["developer.status"]
+        XCTAssertTrue(status.waitForExistence(timeout:20))
+        expectation(for:NSPredicate(format:"value == %@","rotroot"),evaluatedWith:status)
+        waitForExpectations(timeout:20)
+        let normal=XCTAttachment(screenshot:app.screenshot());normal.name="developer-normal";normal.lifetime = .keepAlways;add(normal)
+        app.buttons["pause"].tap();app.buttons["developer.restart"].tap()
+        XCTAssertTrue(status.waitForExistence(timeout:10))
+        app.buttons["pause"].tap();app.buttons["developer.switch"].tap();app.buttons["developer.boss.hard"].tap()
+        expectation(for:NSPredicate(format:"value == %@","rotroot_wraith"),evaluatedWith:status)
+        waitForExpectations(timeout:20)
+        let hard=XCTAttachment(screenshot:app.screenshot());hard.name="developer-hard";hard.lifetime = .keepAlways;add(hard)
+        app.buttons["pause"].tap();app.buttons["return-title"].tap()
+        XCTAssertTrue(app.buttons["developer-tests"].waitForExistence(timeout:10));XCTAssertFalse(status.exists)
+        XCUIDevice.shared.press(.home)
+    }
     @MainActor func testNativeLaunchMenusAndControls() throws {
         let app=XCUIApplication();app.launchArguments=["--ui-testing"];app.launch()
         XCTAssertTrue(app.buttons["new-game"].waitForExistence(timeout:60))

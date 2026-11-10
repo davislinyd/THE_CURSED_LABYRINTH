@@ -21,7 +21,7 @@ enum Area: String, Codable, CaseIterable, Sendable { case world, village, road, 
     case .village: "HAIYA VILLAGE"
     case .road: "ROTWOOD ROAD"
     case .dungeon: "ROTWOOD GROTTO"
-    case .boss: "ROTROOT"
+    case .boss: "FALLEN WARLORD"
     } }
 }
 enum Difficulty: String, Codable, CaseIterable, Sendable {
@@ -29,6 +29,8 @@ enum Difficulty: String, Codable, CaseIterable, Sendable {
     var damage: Float { self == .easy ? 0.5 : self == .hard ? 1.5 : 1 }
     var toughness: Float { self == .easy ? 0.7 : self == .hard ? 1.3 : 1 }
     var tire: Float { self == .easy ? 0.7 : self == .hard ? 1.4 : 1 }
+    var bossArt: String { self == .hard ? "rotroot_wraith" : "rotroot" }
+    var bossTitle: String { self == .hard ? "WRAITH WARLORD" : "FALLEN WARLORD" }
 }
 struct Loot: Codable, Sendable { var kind: String; var id: String?; var n: Int? }
 struct Villager: Codable, Sendable { var x:Int; var y:Int; var role:String; var lines:[Int]; var look:String }

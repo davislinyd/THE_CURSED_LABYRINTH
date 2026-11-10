@@ -100,7 +100,7 @@ class Pack{
 function clips(pack,object,animations){
   const result={};
   for(const[name,clip]of Object.entries(animations)){
-    result[name]={duration:clip.duration,loop:['idle','run','move','guard'].includes(name),tracks:clip.tracks.map(track=>{
+    result[name]={duration:clip.duration,loop:['idle','run','move','move_back','strafe_left','strafe_right','guard'].includes(name),tracks:clip.tracks.map(track=>{
       const dot=track.name.lastIndexOf('.'),node=object.getObjectByName(track.name.slice(0,dot));if(!node)throw new Error('Unbound animation '+track.name);
       return{node:node.userData.nativeIndex,property:track.name.slice(dot+1),times:Array.from(track.times),values:Array.from(track.values)};
     })};
@@ -132,8 +132,16 @@ for(const kind of ['ghoul','hopper','wisp','crow']){
   const model=BUILD_ENEMY[kind]();model.update(0);pack=new Pack(kind);pack.tree(model.root);
   pack.write(ENEMY_CLIPS[kind]?clips(pack,model.root,ENEMY_CLIPS[kind]):procedural(pack,BUILD_ENEMY[kind],{idle:2,move:1.4,attack:kind==='crow'?1.4:1.2,hurt:0.35,stagger:1,die:1.2}));
 }
-const {Rotroot}=source('./actors/Rotroot'),bark=await assets.material('japanese_zelkova_bark',2,{color:0x6a5e52});
-pack=new Pack('rotroot');const boss=new Rotroot(bark);boss.update(0);pack.tree(boss.root);pack.write(procedural(pack,()=>new Rotroot(bark),{idle:3,slam:1.8,sweep:1.6,hurt:0.4,stagger:2,die:2.5}));
+// Blender bosses use rigid bone children, matching the native transform tracks.
+for(const name of ['rotroot','rotroot_wraith']){
+  const bytes=fs.readFileSync(path.join(root,'scripts/blender/export',name+'.glb'));
+  const model=await new GLTFLoader().parseAsync(bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength),'');
+  model.scene.traverse(bakeVertexColor);
+  // Native PNG textures use the opposite V origin to glTF's atlas UVs.
+  model.scene.traverse(object=>{if(object.isMesh)for(const material of Array.isArray(object.material)?object.material:[object.material])if(material.map)material.map.flipY=true;});
+  pack=new Pack(name);pack.tree(model.scene);
+  pack.write(clips(pack,model.scene,Object.fromEntries(model.animations.map(clip=>[clip.name,clip]))));
+}
 const {VillagerModel}=source('./actors/Villager');
 for(const look of ['elder','girl','smith','merchant','keeper']){const model=new VillagerModel(look);pack=new Pack('npc_'+look);pack.tree(model.root);pack.write();}
 if(process.argv.includes('--actors-only')){publish();process.exit(0);}

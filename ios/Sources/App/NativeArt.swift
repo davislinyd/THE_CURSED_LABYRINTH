@@ -108,6 +108,7 @@ struct ArtFile:Decodable {var schema:Int;var name:String;var geometries:[ArtGeom
     private var previous:[Transform]=[]
     private var current=""
     private var elapsed:Float=0
+    private var loopTime:Float=0
     private var blend:Float=1
     private var lastTick=0
     private var motions:Set<Int>=[]
@@ -134,10 +135,11 @@ struct ArtFile:Decodable {var schema:Int;var name:String;var geometries:[ArtGeom
         if flashRemaining>0 {flashRemaining-=delta;if flashRemaining<=0 {for(model,materials)in surfaces{model.model?.materials=materials}}}
         guard let clip=file.animations[name] ?? file.animations["idle"] else{return}
         if name != current || tick<lastTick {
-            previous=nodes.map(\.transform);current=name;elapsed=0;blend=current.hasPrefix("atk") || current=="counter" ? 0.06:0.16
+            let stride=(current.hasPrefix("move")||current.hasPrefix("strafe"))&&(name.hasPrefix("move")||name.hasPrefix("strafe"))&&name != current
+            previous=nodes.map(\.transform);current=name;elapsed=0;if !stride{loopTime=0};blend=current.hasPrefix("atk") || current=="counter" ? 0.06:0.16
         }
-        lastTick=tick;elapsed+=delta
-        let sample=clip.loop ? elapsed*speed:name=="die" ? elapsed:Float(tick)/60
+        lastTick=tick;elapsed+=delta;loopTime+=delta*speed
+        let sample=clip.loop ? loopTime:name=="die" ? elapsed:Float(tick)/60
         let time=clip.loop ? sample.truncatingRemainder(dividingBy:max(0.01,clip.duration)):min(sample,clip.duration)
         for node in motions{transforms[node]=file.nodes[node].transform}
         for track in clip.tracks {
