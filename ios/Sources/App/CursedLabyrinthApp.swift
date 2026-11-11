@@ -110,7 +110,10 @@ struct GameView:View {
                     Spacer()
                     VStack(spacing:5) {
                         Text(session.text(session.areaTitle)).font(.system(size:16,weight:.medium,design:.serif)).tracking(2).shadow(color:.black,radius:3)
-                        if let boss=session.world.boss {meter(boss.hp/boss.maxHP,color:vermilion,height:5).frame(width:200)}
+                        if let boss=session.world.boss {
+                            meter(boss.hp/boss.maxHP,color:vermilion,height:5).frame(width:200)
+                            if boss.phase>1 {Text(session.text(boss.phase==2 ? "ENRAGED":"LAST STAND")).font(.system(size:9,weight:.semibold)).foregroundStyle(gold)}
+                        }
                         if session.lowPower {Text(session.text("REDUCED EFFECTS")).font(.system(size:9)).foregroundStyle(gold)}
                         #if DEBUG
                         if session.developerTesting {Text(session.text("DEVELOPER TEST · NO SAVE")).font(.system(size:9)).foregroundStyle(gold).accessibilityIdentifier("developer.status").accessibilityValue(session.renderer.loadedBossArt ?? "")}
@@ -125,7 +128,10 @@ struct GameView:View {
             }.padding(.horizontal,16).padding(.top,8)
             panel
             #if DEBUG
-            if session.validation != nil {VStack{Spacer();Text("VALIDATION · \(session.validation?.stage ?? 0)").font(.system(size:8)).accessibilityIdentifier("validation.status")}.allowsHitTesting(false)}
+            if session.developerTesting {
+                VStack{Spacer();HStack{Spacer();Text(session.effectiveQuality.rawValue).font(.system(size:8)).accessibilityIdentifier("render.status").accessibilityValue("\(session.renderer.ink.diagnostics.width)x\(session.renderer.ink.diagnostics.height)")}}.padding(6).allowsHitTesting(false)
+            }
+            if session.validation != nil {VStack{Spacer();Text("VALIDATION · \(session.validation?.stage ?? 0)").font(.system(size:8)).accessibilityIdentifier("validation.status").accessibilityValue(String(session.validation?.completions ?? 0))}.allowsHitTesting(false)}
             #endif
         }
     }
@@ -216,6 +222,9 @@ struct SettingsPanel:View {
             ScrollView {
                 VStack(spacing:12) {
                     Picker(session.text("LANGUAGE"),selection:$session.preferences.language){Text("繁體中文").tag("zh");Text("English").tag("en")}.pickerStyle(.segmented)
+                    Picker(session.text("QUALITY"),selection:Binding(get:{session.preferences.quality ?? .balanced},set:{session.preferences.quality=$0;session.changeSettings()})) {
+                        ForEach(GraphicsQuality.allCases,id:\.self){Text(session.text($0.rawValue.uppercased())).tag($0)}
+                    }.pickerStyle(.segmented).accessibilityIdentifier("settings.quality")
                     HStack{Text(session.text("MUSIC")).frame(width:110,alignment:.leading);Slider(value:$session.preferences.music,in:0...1)}
                     HStack{Text(session.text("SOUND")).frame(width:110,alignment:.leading);Slider(value:$session.preferences.sound,in:0...1)}
                     HStack{Text(session.text("CAMERA")).frame(width:110,alignment:.leading);Slider(value:$session.preferences.sensitivity,in:0.4...2)}

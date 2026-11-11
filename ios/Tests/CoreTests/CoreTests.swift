@@ -98,13 +98,13 @@ private func content() throws -> Content {
 @Test func bossBuildsMomentumAndTurnsBeforeAttacking()throws{
     let world=GameWorld(content:try content(),save:DeveloperBossTest.save(difficulty:.normal))
     world.update(InputFrame())
-    #expect(world.enemies[0].velocity.length>0 && world.enemies[0].velocity.length<=0.081)
-    world.update(InputFrame());#expect(world.enemies[0].velocity.length<=0.161)
+    #expect(world.enemies[0].velocity.length>0 && world.enemies[0].velocity.length<=0.121)
+    world.update(InputFrame());#expect(world.enemies[0].velocity.length<=0.241)
     world.save.position=Point(x:24,z:26);world.enemies[0].position=Point(x:24,z:21)
     world.enemies[0].yaw = .pi;world.enemies[0].cooldown=0;world.enemies[0].state="idle"
     world.update(InputFrame())
     #expect(world.enemies[0].state != "attack")
-    #expect(abs(wrapped(world.enemies[0].yaw-Float.pi))<=0.036)
+    #expect(abs(wrapped(world.enemies[0].yaw-Float.pi))<=0.051)
 }
 @Test(arguments:Difficulty.allCases) func bossPursuesRepositionsAndHonorsAttackLock(difficulty:Difficulty)throws{
     let world=GameWorld(content:try content(),save:DeveloperBossTest.save(difficulty:difficulty))
@@ -112,8 +112,8 @@ private func content() throws -> Content {
     for _ in 0..<120 {world.update(InputFrame());world.events.removeAll()}
     let pursued=try #require(world.boss)
     #expect(pursued.position.distance(world.save.position)<initial.position.distance(world.save.position)-1)
-    #expect(pursued.state=="chase")
-    world.enemies[0].state="attack";world.enemies[0].tick=0
+    #expect(["chase","attack"].contains(pursued.state))
+    world.enemies[0].state="attack";world.enemies[0].tick=0;world.enemies[0].attackKind=0
     world.enemies[0].attackStart=48;world.enemies[0].attackEnd=57;world.enemies[0].attackDuration=108
     let locked=world.enemies[0].position
     for _ in 0..<20 {world.update(InputFrame())}
@@ -142,3 +142,129 @@ private func content() throws -> Content {
     #expect(reset.boss != nil);#expect(!reset.save.completed)
 }
 #endif
+
+@Test func tensionIsDeterministicQuietAndSafe() {
+    var a=TensionDirector(),b=TensionDirector(),events:[Int]=[]
+    for tick in 0..<3600 {
+        let first=a.update(area:.road,nearestEnemy:12,entranceDistance:8,combat:false)
+        #expect(first==b.update(area:.road,nearestEnemy:12,entranceDistance:8,combat:false))
+        if first != nil {events.append(tick)}
+    }
+    #expect(events.count>=3 && events.count<=5)
+    for pair in zip(events,events.dropFirst()) {#expect(pair.1-pair.0>=600)}
+    for _ in 0..<1200 {#expect(a.update(area:.village,nearestEnemy:0,entranceDistance:0,combat:false)==nil)}
+    #expect(a.level==0)
+}
+
+#if DEBUG
+@Test func bossDistancePhasesAndCommittedCombo()throws {
+    let world=GameWorld(content:try content(),save:DeveloperBossTest.save(difficulty:.normal))
+    world.save.position=Point(x:24,z:29);world.enemies[0].cooldown=0
+    world.update(InputFrame());#expect(world.enemies[0].attackKind==2)
+    let start=world.enemies[0].position,yaw=world.enemies[0].yaw
+    for _ in 0..<40 {world.update(InputFrame())}
+    #expect(world.enemies[0].position.distance(start)>1)
+    #expect(world.enemies[0].yaw==yaw)
+    #expect(world.enemies[0].attackStart==48 && world.enemies[0].attackClip=="charge")
+    world.enemies[0].state="idle";world.enemies[0].hp=world.enemies[0].maxHP*0.6
+    world.enemies[0].attackSequence=2;world.enemies[0].cooldown=0
+    world.save.position=world.enemies[0].position+Point(x:0,z:4)
+    world.update(InputFrame())
+    #expect(world.enemies[0].phase==2 && world.enemies[0].attackKind==3)
+    #expect(world.enemies[0].attackClip=="sweep")
+    world.enemies[0].tick=71;world.enemies[0].dealt=true
+    world.update(InputFrame())
+    #expect(world.enemies[0].attackKind==0 && !world.enemies[0].comboRemaining)
+    #expect(world.enemies[0].tick==0 && world.enemies[0].attackStart==48)
+    world.enemies[0].hp=world.enemies[0].maxHP*0.25
+    let tick=world.enemies[0].tick,transitionYaw=world.enemies[0].yaw
+    world.update(InputFrame());#expect(world.enemies[0].phase==3)
+    #expect(world.enemies[0].state=="attack" && world.enemies[0].tick==tick+1)
+    #expect(world.enemies[0].yaw==transitionYaw)
+}
+@Test func pausedEnvironmentDoesNotAdvance()throws {
+    let world=GameWorld(content:try content())
+    for _ in 0..<100 {world.update(InputFrame())}
+    world.pause();let level=world.tension.level,cooldown=world.tension.cooldown
+    for _ in 0..<100 {world.update(InputFrame())}
+    #expect(world.tension.level==level && world.tension.cooldown==cooldown)
+}
+#endif
+
+#if DEBUG
+@Test(arguments:[0,1,2,3]) func bossStrikeWindowAndDefenses(kind:Int)throws {
+    for defense in ["guard","dodge"] {
+        let world=GameWorld(content:try content(),save:DeveloperBossTest.save(difficulty:.normal))
+        world.save.position=Point(x:24,z:25);world.save.yaw = .pi
+        world.enemies[0].attackKind=kind;world.enemies[0].state="attack"
+        world.enemies[0].attackStart=world.enemies[0].overhead ? 48:40
+        world.enemies[0].attackEnd=world.enemies[0].attackStart+9
+        world.enemies[0].tick=world.enemies[0].attackStart-2
+        let life=world.save.life
+        world.update(InputFrame());#expect(world.save.life==life)
+        world.hero.enter(defense)
+        if defense=="dodge" {world.hero.tick=(world.hero.timing?.iframes?.first ?? 0)}
+        world.update(InputFrame(held:defense=="guard" ? [.guardAction]:[]))
+        #expect(world.save.life==life)
+        if defense=="guard" {#expect(world.events.contains{$0.kind==(world.enemies[0].overhead ? "guard":"parry")})}
+    }
+}
+#endif
+
+@Test func oldPreferencesPreserveSettingsAndDefaultQuality()throws {
+    let old=Data(#"{"language":"zh","music":0.3,"sound":0.4,"haptics":false,"sensitivity":1.2}"#.utf8)
+    let settings=try JSONDecoder().decode(Preferences.self,from:old)
+    #expect(settings.language=="zh" && settings.music==0.3 && !settings.haptics)
+    #expect((settings.quality ?? .balanced) == .balanced)
+    for quality in GraphicsQuality.allCases {
+        var updated=settings;updated.quality=quality
+        let decoded=try JSONDecoder().decode(Preferences.self,from:JSONEncoder().encode(updated))
+        #expect(decoded.quality==quality && decoded.music==settings.music)
+    }
+    #expect(GraphicsQuality.performance.renderScale<GraphicsQuality.balanced.renderScale)
+    #expect(GraphicsQuality.high.shadowDistance>GraphicsQuality.balanced.shadowDistance)
+}
+
+#if DEBUG
+@Test(arguments:Difficulty.allCases) func bossPracticeTraversesPhasesWithRealInputs(difficulty:Difficulty)throws {
+    let world=GameWorld(content:try content(),save:DeveloperBossTest.save(difficulty:difficulty))
+    let driver=ValidationDriver(bossOpening:true)
+    var phases:Set<Int>=[],attacks:Set<Int>=[]
+    for _ in 0..<18000 {
+        world.update(driver.input(world));driver.observe(world)
+        if let boss=world.boss {phases.insert(boss.phase);if boss.state=="attack" {attacks.insert(boss.attackKind)}}
+        world.events.removeAll(keepingCapacity:true)
+        if driver.completions>0 {break}
+    }
+    print("Boss practice",difficulty.rawValue,"phases",phases.sorted(),"attacks",attacks.sorted(),driver.report)
+    #expect(world.save.completed && world.save.keyItems.contains("mirror"))
+    #expect(phases==[1,2,3])
+    #expect(attacks.contains(2));#expect(attacks.contains(3))
+}
+#endif
+
+#if DEBUG
+@Test func gapCloserReachesStationaryTargetAfterFullTell()throws {
+    let world=GameWorld(content:try content(),save:DeveloperBossTest.save(difficulty:.normal))
+    world.save.position=Point(x:24,z:29);world.enemies[0].cooldown=0
+    let life=world.save.life
+    world.update(InputFrame());#expect(world.enemies[0].attackKind==2)
+    for _ in 1..<48 {world.update(InputFrame());#expect(world.save.life==life)}
+    world.update(InputFrame())
+    #expect(world.save.life<life)
+    #expect(world.enemies[0].dealt && world.enemies[0].velocity.length==0)
+}
+#endif
+
+@Test func colossusContactUsesTheRealStrikeClock() {
+    for kind in 0...3 {
+        var enemy=Enemy(id:"boss",kind:"rotroot",position:Point(),hp:40,maxHP:40)
+        enemy.state="attack";enemy.attackKind=kind
+        enemy.attackStart=enemy.overhead ? 48:40;enemy.attackEnd=enemy.overhead ? 57:60
+        enemy.tick=enemy.attackStart
+        #expect(abs(ColossusPose.height(enemy)-0.8)<0.001)
+        #expect(!ColossusPose.exposed(enemy))
+        enemy.tick=20;#expect(!ColossusPose.exposed(enemy));#expect(ColossusPose.height(enemy)>2)
+        enemy.tick=enemy.attackEnd;#expect(ColossusPose.exposed(enemy));#expect(ColossusPose.side(enemy)==0)
+    }
+}

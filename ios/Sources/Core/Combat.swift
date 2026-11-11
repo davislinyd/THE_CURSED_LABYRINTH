@@ -87,6 +87,13 @@ struct Enemy: Sendable, Identifiable {
     var aim = Point()
     var velocity = Point()
     var attackKind = 0
+    var phase = 1
+    var attackSequence = 0
+    var comboRemaining = false
+    var overhead:Bool { attackKind == 0 || attackKind == 2 }
+    var attackClip:String { attackKind == 2 ? "charge":overhead ? "slam":"sweep" }
+    var attackReach:Float { overhead ? 6:5.5 }
+    var attackArc:Float { overhead ? 0.45:2.6 }
     var dealt = false
     var attackStart=30
     var attackEnd=40

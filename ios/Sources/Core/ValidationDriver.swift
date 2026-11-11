@@ -11,8 +11,9 @@ final class ValidationDriver {
     private var routeArea:Area?
     private var panelTicks=0
     private let loops:Bool
+    private let bossOpening:Bool
     private let started=Date()
-    init(loop:Bool=false) {loops=loop}
+    init(loop:Bool=false,bossOpening:Bool=false) {loops=loop;self.bossOpening=bossOpening}
     var shouldRestart:Bool {loops && completions>0 && panelTicks>120 && Date().timeIntervalSince(started)<1200}
     var report:[String:Any] { ["stage":stage,"inputTicks":ticks,"completions":completions,"milestones":milestones,"wallSeconds":Date().timeIntervalSince(started)] }
     func restart() {stage=0;route=[];routeArea=nil;panelTicks=0}
@@ -29,6 +30,7 @@ final class ValidationDriver {
     func input(_ world:GameWorld)->InputFrame {
         ticks+=1
         if world.panel != .none {return InputFrame()}
+        if bossOpening && world.save.area == .boss && ticks<=100 {return InputFrame()}
         if let enemy=world.enemies.filter({$0.alive && $0.position.distance(world.save.position)<13 && world.grid.visible(world.save.position,$0.position,flags:world.save.flags)}).min(by:{$0.position.distance(world.save.position)<$1.position.distance(world.save.position)}) {
             return fight(world,enemy)
         }

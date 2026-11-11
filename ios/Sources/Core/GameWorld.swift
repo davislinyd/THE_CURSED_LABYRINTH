@@ -12,6 +12,8 @@ final class GameWorld {
     private(set) var grid:Grid
     var hero:HeroCombat
     var fatigue=Fatigue()
+    var tension=TensionDirector()
+    private var tensionEntrance:Point?
     var enemies:[Enemy]=[]
     var projectiles:[Projectile]=[]
     var events:[GameEvent]=[]
@@ -67,6 +69,7 @@ final class GameWorld {
         } else if save.area == .boss {
             spawn("rotroot",id:"boss:rotroot",at:Point(x:24,z:21)); battleSnapshot=save
         }
+        tension=TensionDirector();tensionEntrance=grid.find(save.area == .dungeon ? "K":save.area == .road ? "G":"1")
         reveal();safeSave=save
     }
     func spawn(_ kind:String,id:String,at p:Point) {
@@ -105,10 +108,12 @@ final class GameWorld {
         combatActive = save.area == .boss || enemies.contains{$0.alive && $0.position.distance(save.position)<10 && grid.visible(save.position,$0.position,flags:save.flags)}
         if combatActive && !wasCombat && battleSnapshot == nil {battleSnapshot=safeSave;saveRevision+=1}
         if !combatActive && wasCombat {battleSnapshot=nil;checkpointSafe()}
+        if let cue=tension.update(area:save.area,nearestEnemy:enemies.filter(\.alive).map{$0.position.distance(save.position)}.min() ?? 100,entranceDistance:tensionEntrance?.distance(save.position) ?? 100,combat:combatActive) {event(cue)}
         updateTarget()
         if input.look.length>0.001 {
             cameraYaw-=input.look.x;cameraPitch=clamp(cameraPitch+input.look.z,-0.15,0.7);manualCamera=180
         } else if manualCamera>0 {manualCamera-=1}
+        if save.area == .boss {cameraYaw = .pi+clamp(wrapped(cameraYaw-Float.pi),-0.35,0.35);cameraPitch=clamp(cameraPitch,-0.05,0.4)}
         let cam=save.area.thirdPerson ? cameraYaw : -Float.pi*0.75
         let move=Point(x:-cos(cam)*input.move.x+sin(cam)*input.move.z,z:sin(cam)*input.move.x+cos(cam)*input.move.z)
         hero.update(input)
@@ -147,7 +152,10 @@ final class GameWorld {
         updateEnemies();updateProjectiles()
         if save.life<=0 {hero.enter("die");panel = .death;event("death");return}
         if save.area.thirdPerson && manualCamera==0 {
-            if let target=enemies.first(where:{$0.id==targetID}) {
+            if save.area == .boss {
+                let angle=atan2(24-save.position.x,-5-save.position.z)
+                cameraYaw+=wrapped(angle-cameraYaw)*0.018
+            } else if let target=enemies.first(where:{$0.id==targetID}) {
                 let a=atan2(target.position.x-save.position.x,target.position.z-save.position.z)
                 cameraYaw+=wrapped(a-cameraYaw)*0.018
             } else if move.length>0.2 && abs(wrapped(save.yaw-cameraYaw)) < .pi/2 {
@@ -178,11 +186,12 @@ final class GameWorld {
     }
     private func strike() {
         for i in enemies.indices where enemies[i].alive && enemies[i].lastSwing != hero.swing {
+            if enemies[i].kind=="rotroot" && !ColossusPose.exposed(enemies[i]) {continue}
             let d=enemies[i].position-save.position
             let reach:Float = enemies[i].kind == "rotroot" ? 3.6 : 2.7
             let multiplier:Float=enemies[i].state=="stagger" && enemies[i].kind=="rotroot" ? 1.5:1
-            if enemies[i].kind=="rotroot",d.length>=reach,enemies[i].state=="attack",enemies[i].attackKind==0,enemies[i].tick>enemies[i].attackEnd {
-                let root=enemies[i].position+enemies[i].aim*4.6,offset=root-save.position
+            if enemies[i].kind=="rotroot",d.length>=reach,enemies[i].state=="attack",enemies[i].overhead,enemies[i].tick>enemies[i].attackEnd {
+                let root=enemies[i].position+enemies[i].aim*2.6,offset=root-save.position
                 if offset.length<2.7 && abs(wrapped(atan2(offset.x,offset.z)-save.yaw))<1.3 {
                     enemies[i].lastSwing=hero.swing;damageEnemy(i,damage:save.swordDamage*hero.power*1.5,stagger:hero.state=="counter");continue
                 }
@@ -244,21 +253,32 @@ final class GameWorld {
             let d=save.position-enemies[i].position,dist=d.length
             let boss=enemies[i].kind == "rotroot"
             let spec=content.foes[enemies[i].kind] ?? content.foes["ghoul"]!
+            if boss {
+                let next=BossRhythm.phase(enemies[i].hp/enemies[i].maxHP)
+                if next>enemies[i].phase {enemies[i].phase=next;event("boss_phase",enemies[i].position)}
+            }
             if enemies[i].state=="hurt" || enemies[i].state=="stagger" {
                 if boss {enemies[i].velocity=Point()}
-                if enemies[i].tick>(enemies[i].state=="stagger" ? (boss ? 120:60):21) {enemies[i].state="idle";enemies[i].tick=0}
+                if enemies[i].tick>(enemies[i].state=="stagger" ? (boss ? BossRhythm.staggerTicks:60):21) {enemies[i].state="idle";enemies[i].tick=0}
                 continue
             }
             if enemies[i].state=="attack" {
                 if boss {enemies[i].velocity=Point()}
                 let active=enemies[i].attackStart,t=enemies[i].tick
+                if boss && enemies[i].attackKind==2 && t>=BossRhythm.chargeStart && t<BossRhythm.chargePlant {
+                    // Telegraph first; travel only along the committed heading, then plant before impact.
+                    let speed:Float=BossRhythm.chargeSpeed*min(1,Float(t-BossRhythm.chargeStart+1)/Float(BossRhythm.chargeRamp))
+                    let next=grid.move(enemies[i].position,by:enemies[i].aim*speed/60,radius:1.65,flags:save.flags)
+                    if next.distance(Point(x:24,z:24))<=8 && next.distance(save.position)>=1.8 {enemies[i].position=next}
+                }
+                if boss && t==active {event("boss_swing",enemies[i].position)}
                 if t>=active && t<enemies[i].attackEnd && !enemies[i].dealt {
                     if boss {
                         let arc=abs(wrapped(atan2(d.x,d.z)-enemies[i].yaw))
-                        if dist < (enemies[i].attackKind==0 ? 6:5.5) && arc < (enemies[i].attackKind==0 ? 0.45:2.6) {
-                            enemies[i].dealt=true;hurt(enemies[i].attackKind==0 ? 3:2,from:enemies[i].position,enemyIndex:i,parryable:enemies[i].attackKind==1)
+                        if dist < enemies[i].attackReach && arc < enemies[i].attackArc {
+                            enemies[i].dealt=true;hurt(enemies[i].overhead ? 3:2,from:enemies[i].position,enemyIndex:i,parryable:!enemies[i].overhead)
                         }
-                        if t==active && enemies[i].attackKind==0 {event("slam",enemies[i].position+enemies[i].aim*4)}
+                        if t==active && enemies[i].overhead {event("slam",enemies[i].position+enemies[i].aim*4)}
                     } else if dist<spec.reach+0.4 && abs(wrapped(atan2(d.x,d.z)-enemies[i].yaw))<spec.arc && grid.visible(enemies[i].position,save.position,flags:save.flags) {
                         enemies[i].dealt=true
                         hurt(spec.damage,from:enemies[i].position,enemyIndex:i)
@@ -272,20 +292,27 @@ final class GameWorld {
                         enemies[i].position=grid.move(enemies[i].position,by:enemies[i].aim*speed/60,radius:spec.radius,flags:save.flags)
                     }
                 }
-                if t>=enemies[i].attackDuration {enemies[i].state="idle";enemies[i].cooldown=boss ? (enemies[i].hp<enemies[i].maxHP/2 ? 50:80):spec.cooldown;enemies[i].tick=0}
+                if boss && enemies[i].comboRemaining && t>=72 {
+                    // A second complete tell; never rotate toward a dodge after the first commitment.
+                    enemies[i].comboRemaining=false;enemies[i].attackKind=0;enemies[i].tick=0
+                    enemies[i].attackStart=48;enemies[i].attackEnd=57;enemies[i].attackDuration=108
+                    enemies[i].dealt=false;event("warning",enemies[i].position);continue
+                }
+                if t>=enemies[i].attackDuration {enemies[i].state="idle";enemies[i].cooldown=boss ? BossRhythm.cooldown(save.difficulty,phase:enemies[i].phase):spec.cooldown;enemies[i].tick=0}
                 continue
             }
             enemies[i].cooldown=max(0,enemies[i].cooldown-1)
             if !boss && (dist>spec.sight || !grid.visible(enemies[i].position,save.position,flags:save.flags)) {enemies[i].state="idle";continue}
             let turn=wrapped(atan2(d.x,d.z)-enemies[i].yaw)
-            let turnRate:Float=boss ? (save.difficulty == .hard ? 0.055:0.035):0.08
+            let turnRate:Float=boss ? BossRhythm.turnRate(save.difficulty):0.08
             enemies[i].yaw+=clamp(turn,-turnRate,turnRate)
-            let range:Float = boss ? 5.8 : spec.range
+            let range:Float = boss ? BossRhythm.engageRange : spec.range
             if dist<range && enemies[i].cooldown==0 && (!boss || abs(turn)<0.2) {
                 enemies[i].state="attack";enemies[i].tick=0;enemies[i].aim=d.normalized;enemies[i].dealt=false
                 if boss {
-                    enemies[i].attackKind=dist<3.6 ? 1:dist>5.2 ? 0:(areaTick/60)%2
-                    enemies[i].attackStart=enemies[i].attackKind==0 ? 48:40;enemies[i].attackEnd=enemies[i].attackKind==0 ? 57:60;enemies[i].attackDuration=enemies[i].attackKind==0 ? 108:96
+                    enemies[i].attackKind=BossRhythm.choose(distance:dist,phase:enemies[i].phase,sequence:enemies[i].attackSequence)
+                    enemies[i].attackSequence+=1;enemies[i].comboRemaining=enemies[i].attackKind==3
+                    enemies[i].attackStart=enemies[i].overhead ? 48:40;enemies[i].attackEnd=enemies[i].overhead ? 57:60;enemies[i].attackDuration=enemies[i].overhead ? 108:96
                     enemies[i].aim=Point(x:sin(enemies[i].yaw),z:cos(enemies[i].yaw));enemies[i].velocity=Point()
                 }
                 event("warning",enemies[i].position)
@@ -293,11 +320,11 @@ final class GameWorld {
                 let toward=d.normalized,radial:Float=clamp((dist-4.2)/1.6,-0.65,1)
                 let side:Float=(areaTick/180)%2==0 ? 1:-1
                 let tangent=Point(x:toward.z,z:-toward.x)*side*(0.65*clamp((6.5-dist)/1.5,0,1))
-                let speed:Float=save.difficulty == .hard ? 2.4:save.difficulty == .easy ? 1.5:1.8
+                let speed:Float=BossRhythm.speed(save.difficulty,phase:enemies[i].phase)
                 let direction=toward*radial+tangent
                 let desired=abs(turn)>1 ? Point():(direction.length>1 ? direction.normalized:direction)*speed
                 let change=desired-enemies[i].velocity
-                enemies[i].velocity=enemies[i].velocity+change.normalized*min(change.length,4.8/60)
+                enemies[i].velocity=enemies[i].velocity+change.normalized*min(change.length,BossRhythm.acceleration/60)
                 var next=grid.move(enemies[i].position,by:enemies[i].velocity/60,radius:1.65,flags:save.flags)
                 let center=Point(x:24,z:24),offset=next-center
                 if offset.length>8 {next=center+offset.normalized*8}

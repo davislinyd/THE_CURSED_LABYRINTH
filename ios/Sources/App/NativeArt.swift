@@ -127,9 +127,20 @@ struct ArtFile:Decodable {var schema:Int;var name:String;var geometries:[ArtGeom
         func collect(_ entity:Entity){if let model=entity as? ModelEntity,let component=model.model{surfaces.append((model,component.materials))};entity.children.forEach(collect)}
         collect(root)
     }
+    func joint(_ name:String)->Entity? {
+        guard let index=file.nodes.firstIndex(where:{$0.name.hasPrefix(name) && !$0.name.contains("surface")})else{return nil}
+        return nodes[index]
+    }
     func flash(){
         flashRemaining=0.065
-        for (model,_) in surfaces {model.model?.materials=[UnlitMaterial(color:UIColor(red:1,green:0.9,blue:0.72,alpha:1))]}
+        for (model,_) in surfaces {
+            if file.name.hasPrefix("rotroot") {
+                var ancestor:Entity?=model;var hand=false
+                while let node=ancestor {if node.name.contains("hand"){hand=true};ancestor=node.parent}
+                if !hand {continue}
+            }
+            model.model?.materials=[UnlitMaterial(color:UIColor(red:1,green:0.9,blue:0.72,alpha:1))]
+        }
     }
     func animate(_ name:String,tick:Int,delta:Float,speed:Float=1){
         if flashRemaining>0 {flashRemaining-=delta;if flashRemaining<=0 {for(model,materials)in surfaces{model.model?.materials=materials}}}

@@ -34,8 +34,8 @@ final class InkPostprocess:@unchecked Sendable {
     }
     var impact:Float {get{settings.withLock{$0.impact}}set{settings.withLock{$0.impact=newValue}}}
     var diagnostics:(active:Bool,width:Int,height:Int){let dimensions=settings.withLock{$0.dimensions};return(pipeline != nil,dimensions.x,dimensions.y)}
-    func update(camera:simd_float4x4,thirdPerson:Bool,reduced:Bool,time:Float){
-        settings.withLock{$0.camera=camera;$0.third=thirdPerson ? 1:0;$0.reduced=reduced ? 1:0;$0.time=time;$0.impact*=0.9}
+    func update(camera:simd_float4x4,thirdPerson:Bool,reduced:Bool,time:Float,tension:Float){
+        settings.withLock{$0.camera=camera;$0.third=thirdPerson ? 1:0;$0.reduced=reduced ? 1:0;$0.time=time;$0.world.w=tension;$0.impact*=0.9}
     }
     @MainActor func updateFog(_ world:GameWorld){
         let grid=world.grid
