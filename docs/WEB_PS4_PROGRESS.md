@@ -115,7 +115,7 @@ After 另測：CPU update 約 0.35 ms、render 提交約 2.5 ms。平原各 Prof
 ## 驗證紀錄（最近一次，2026-11-12：腳掌著地）
 
 - `npm run typecheck`：通過。`npm test`：20 個檔案、165 個測試通過（新增 7 個 `feet on the ground`）。`npx vite build --outDir <scratchpad>/build-check`：通過。
-- 瀏覽器（Playwright Chromium，dev server）：`?bench=grotto` 與 `?bench=boss` 執行中 Console 無錯誤、無警告；逐 tick 探針數據見 Phase 4。只做了程式化量測與 Boss 場景截圖（背後視角，看不出腳步細節），**沒有真人目視驗收跑姿**。
+- 瀏覽器（Playwright Chromium，dev server）：`?bench=grotto` 與 `?bench=boss` 執行中 Console 無錯誤、無警告；逐 tick 探針數據見 Phase 4。Agent 只做了程式化量測與 Boss 場景截圖（背後視角，看不出腳步細節）。2026-11-12 使用者將腳掌著地設為**驗收通過**。
 
 ## 驗證紀錄（2026-11-11）
 
@@ -127,7 +127,7 @@ After 另測：CPU update 約 0.35 ms、render 提交約 2.5 ms。平原各 Prof
 ## 尚未完成（依使用者最新優先順序）
 
 1. **人物可動性／流暢度的下一步**：
-   - 腳掌著地已完成，但**待真人目視驗收**，重點是較低的跑姿與離地時的膝蓋動作。
+   - 腳掌著地已完成，2026-11-12 使用者驗收通過。
    - 主角仍是「剛性分件＋可擺動部件」，不是蒙皮；沒有手指動作。
    - 跑步 Clip 本身沒重做：它的骨盆在支撐中段最高，與物理相反，目前由 `FootPlant` 下沉骨盆補償。
    - 轉身沒有專屬動作；正面頂牆時腿仍慢速擺動、腳會滑；攻擊、翻滾等 Clip 的前衝沒有著地處理。
@@ -141,8 +141,8 @@ After 另測：CPU update 約 0.35 ms、render 提交約 2.5 ms。平原各 Prof
 
 ## 下一個優先執行的具體工作
 
-1. 請使用者用 `http://localhost:5173/?bench=boss&perf`（或實際操作，按 C 切換跑步）目視驗收跑姿，重點是腳是否踩實、骨盆高度、離地的膝蓋動作。若嫌跑姿太低，調 `FootPlant.ts` 的 `EASY`（0.92；越大骨盆越高、膝蓋越直）。
-2. ~~合併~~：2026-11-12 已依使用者指示將 `feature/web-ps4-upgrade` 與 `feature/ios-cinematic-combat-upgrade` 以 `--no-ff` 合併回 `main`（README 開發歷程的衝突已手動保留兩段）。合併時跑姿尚未經真人目視驗收，第 1 項仍待辦。
+1. ~~目視驗收跑姿~~：2026-11-12 使用者驗收通過。日後若要調整跑姿高度，調 `FootPlant.ts` 的 `EASY`（0.92；越大骨盆越高、膝蓋越直）。
+2. ~~合併~~：2026-11-12 已依使用者指示將 `feature/web-ps4-upgrade` 與 `feature/ios-cinematic-combat-upgrade` 以 `--no-ff` 合併回 `main`（README 開發歷程的衝突已手動保留兩段）。合併後 `main` 已 push。
 3. 之後再進行「尚未完成」第 1 項的其餘部分。
 
 ## Blender 注意事項
