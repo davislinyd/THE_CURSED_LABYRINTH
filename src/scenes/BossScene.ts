@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { AutoInput, HeroActor, Mark } from '../actors/HeroActor';
+import { buildSamuraiHD } from '../actors/SamuraiHD';
 import { ROTROOT_ATTACK, ROTROOT_REACT, Rotroot, buildRotroot } from '../actors/Rotroot';
 import { HIT_STOP } from '../combat/HeroMachine';
 import { harm, toughness } from '../core/Difficulty';
@@ -8,6 +9,9 @@ import { DungeonId, ItemId, swordDamage } from '../core/GameState';
 import { Scene } from '../core/SceneManager';
 import { DUNGEONS } from '../data/levels/dungeons';
 import { FollowCam } from '../engine/FollowCam';
+import { pointShadow } from '../engine/Lighting';
+import { RIM, surfaceDetail } from '../engine/Shading';
+import type { QualityProfile } from '../engine/Quality';
 import { Movers } from '../engine/Interp';
 import { View } from '../engine/Renderer';
 import { t } from '../i18n';
@@ -58,6 +62,10 @@ export class BossScene implements Scene {
   private frame = 0;
   private hurtFlash = 0;
   private readonly movers = new Movers();
+  /** The hollow's own lights and air, which turn from violet to blood as the guardian weakens. */
+  private readonly arena: THREE.PointLight[] = [];
+  private readonly haze = new THREE.Color(0x05060a);
+  private rage = 0;
   /** The arena wall as 1 m blocks, for the camera's line of sight. */
   private readonly solid: SolidFn = (cx, cy) => {
     const out: Rect[] = [];
@@ -94,17 +102,16 @@ export class BossScene implements Scene {
       g.assets.material('mud_forest', 1, { color: 0x8a8478 }),
       g.assets.material('rock_wall_02', 1, { color: 0x8a847a }),
     ]);
-    s3.background = new THREE.Color(0x040506);
-    s3.fog = new THREE.FogExp2(0x040506, 0.045);
+    s3.background = this.haze;
+    s3.fog = new THREE.FogExp2(this.haze, 0.04);
     s3.environment = await g.assets.environment('moonlit_golf', g.gfx.gl);
-    s3.environmentIntensity = 0.15;
-    if (g.settings.effects === 'high') {
-      this.heroLight.castShadow = true;
-      this.heroLight.shadow.mapSize.setScalar(1024);
-      this.heroLight.shadow.camera.near = 0.3;
-      this.heroLight.shadow.radius = 3;
-      this.heroLight.shadow.bias = -0.003;
+    s3.environmentIntensity = 0.15 * g.gfx.quality.env;
+    RIM.uRimColor.value.setRGB(0.13, 0.11, 0.2);
+    if (g.gfx.quality.detail) {
+      surfaceDetail(floorMat, { macro: 0.6, wet: 0.5, size: 5 });
+      surfaceDetail(wallMat, { macro: 0.6, moss: 0.5, wet: 0.3, size: 6 });
     }
+    pointShadow(this.heroLight, g.gfx.quality);
     const floor = new THREE.Mesh(new THREE.CircleGeometry(ARENA_R + 1, 48), floorMat);
     floor.rotation.x = -Math.PI / 2;
     const uv = floor.geometry.attributes.uv;
@@ -123,18 +130,24 @@ export class BossScene implements Scene {
     const wall = new THREE.Mesh(wallGeo, wallMat);
     wall.material.side = THREE.BackSide;
     wall.position.y = WALL_H;
-    s3.add(floor, wall, this.heroLight, this.fx.group, new THREE.HemisphereLight(0x3a4050, 0x100a08, 0.3));
-    for (let i = 0; i < 4; i++) {
-      const a = (i / 4) * Math.PI * 2 + Math.PI / 4;
-      const l = new THREE.PointLight(0x9a6aff, 16, 14, 1.5);
-      l.position.set(Math.sin(a) * (ARENA_R - 1), 2.5, Math.cos(a) * (ARENA_R - 1));
+    s3.add(floor, wall, this.heroLight, this.fx.group, new THREE.HemisphereLight(0x46506a, 0x120c0a, 0.42));
+    // a cold shaft from the roof behind the guardian: its outline and the far wall stand out of the dark
+    // (a directional light costs far less than the point lights it replaces, and casts no shadow)
+    const shaft = new THREE.DirectionalLight(0x8fa0ff, 0.85);
+    shaft.position.set(BOSS.x - 5, 14, BOSS.z - 9);
+    shaft.target.position.set(BOSS.x, 1.5, BOSS.z + 3);
+    s3.add(shaft, shaft.target);
+    for (const side of [1, -1]) {
+      const l = new THREE.PointLight(0x9a6aff, 26, 18, 1.4);
+      l.position.set(side * (ARENA_R - 1.5), 3, BOSS.z + 2);
+      this.arena.push(l);
       s3.add(l);
     }
     this.boss = await buildRotroot(g.assets);
     this.boss.root.traverse((o) => (o.castShadow = (o as THREE.Mesh).isMesh === true));
     this.boss.root.position.set(BOSS.x, 0, BOSS.z);
     s3.add(this.boss.root);
-    this.hero = new HeroActor(0, 8, this.game.fatigue);
+    this.hero = new HeroActor(0, 8, this.game.fatigue, await buildSamuraiHD(g.assets));
     this.hero.yaw = Math.PI;
     this.heroShadow = blobShadow(1.3);
     s3.add(this.hero.root, this.heroShadow, this.hero.effects);
@@ -171,6 +184,10 @@ export class BossScene implements Scene {
     this.struck = false;
     if (p === 'slam' || p === 'sweep' || p === 'hurt' || p === 'stagger' || p === 'die') this.boss.play(p, arm);
     if (p === 'idle') this.boss.play('idle');
+  }
+
+  quality(q: QualityProfile): void {
+    pointShadow(this.heroLight, q);
   }
 
   /** Enter also confirms, so it must not open the pause menu over the death screen. */
@@ -225,7 +242,10 @@ export class BossScene implements Scene {
     if (h.machine.events.includes('use')) this.useItem();
     this.boss.update(1 / 60);
     this.boss.root.updateMatrixWorld(true);
+    // (the glow asked for here shows from the next tick's pose on: the order of pose and judgement is as it was)
+    this.boss.warn = 0;
     this.think(alive);
+    this.mood();
     this.heroStrikes();
     const got = this.fx.update(1 / 60, h.root.position);
     if (got.red) g.state.weaponExp += got.red;
@@ -268,11 +288,16 @@ export class BossScene implements Scene {
       case 'slam':
       case 'sweep': {
         const tm = ROTROOT_ATTACK[this.phase];
-        // its eyes flare before the blow
+        // its cracks and eyes glow as the blow gathers, and blaze while it falls
+        this.boss.warn = this.t < tm.active[0] ? Math.max(0, 1 - (tm.active[0] - this.t) / 40) ** 2 : this.t < tm.active[1] ? 1 : 0;
         if (this.t === tm.active[0] - WARN_LEAD) this.fx.glint(this.boss.core.getWorldPosition(new THREE.Vector3()), 0xff5020, 2.4);
         if (this.t === tm.active[0] && this.phase === 'slam') {
           this.game.sfx('break_heavy');
           this.cam.shake(0.5);
+          // earth and splinters where the root lands
+          const tip = this.boss.armPoint(this.arm, 9);
+          this.fx.dust(tip.x, tip.z, 16);
+          this.fx.spark(tip.setY(0.35), 0xffa050, 1.5);
         }
         if (this.t >= tm.active[0] && this.t < tm.active[1] && !this.struck && heroAlive && this.armTouches(this.arm, this.phase === 'slam' ? 1.2 : 1.0)) {
           this.struck = true;
@@ -298,6 +323,17 @@ export class BossScene implements Scene {
         if (this.t > 200 || (this.t > 60 && (this.game.input.pressed('confirm') || this.game.input.mouseLeft))) this.game.bossDefeated(DUNGEONS[this.id].boss);
         return;
     }
+  }
+
+  /** Below half its life the hollow turns the colour of blood: lights, air and the edge on every body. */
+  private mood(): void {
+    const want = this.hp < this.maxHp / 2 && this.phase !== 'die' && this.phase !== 'won' ? 1 : 0;
+    if (Math.abs(want - this.rage) < 0.002) return;
+    this.rage += (want - this.rage) * 0.03;
+    const k = this.rage;
+    for (const l of this.arena) l.color.setRGB(0.6 + 0.4 * k, 0.42 - 0.3 * k, 1 - 0.88 * k);
+    this.haze.setRGB(0.02 + 0.05 * k, 0.024 - 0.012 * k, 0.04 - 0.03 * k);
+    RIM.uRimColor.value.setRGB(0.13 + 0.12 * k, 0.11 - 0.05 * k, 0.2 - 0.14 * k);
   }
 
   /** Is the hero within `r` of any segment point of an arm (near the ground)? */

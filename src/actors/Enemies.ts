@@ -1,8 +1,9 @@
 import * as THREE from 'three';
 import { glowTexture, lamellarTextures, noiseTexture } from '../engine/ProcTex';
 import { Animator } from './Animator';
+import { BodyMotion } from './BodyMotion';
 import { cyl, part, swordGrip } from './Build';
-import { HUMAN, Pose, Proportions, buildRig, makeClip, mirror } from './Rig';
+import { BONES, BoneName, HUMAN, Pose, Proportions, buildRig, makeClip, mirror } from './Rig';
 
 export type EnemyAction = 'idle' | 'move' | 'attack' | 'hurt' | 'stagger' | 'die';
 
@@ -142,17 +143,42 @@ class RiggedEnemy implements EnemyModel {
   private readonly skin: Skin;
   /** Seconds since it fell (-1 while alive). */
   private dying = -1;
+  /** Lean and breath over the clips (drawing only), from how the game moved the root since the last tick. */
+  private readonly motion: BodyMotion;
+  private readonly was = new THREE.Vector3();
+  private wasYaw = 0;
+  private action: EnemyAction = 'idle';
   constructor(readonly root: THREE.Object3D, clips: Record<EnemyAction, THREE.AnimationClip>) {
     this.anim = new Animator(root, clips, ['attack', 'hurt', 'stagger', 'die']);
     this.anim.play('idle');
     this.skin = new Skin(root);
+    const bones = Object.fromEntries(BONES.map((b) => [b, root.getObjectByName(b)!])) as Record<BoneName, THREE.Object3D>;
+    this.motion = new BodyMotion({ root: root as THREE.Group, bones, p: HUMAN });
+    this.was.copy(root.position);
+    this.wasYaw = root.rotation.y;
   }
   play(a: EnemyAction): void {
     this.anim.play(a, a === 'die' ? 0.15 : 0.1, a === 'attack' || a === 'hurt');
+    this.action = a;
     if (a === 'die') this.dying = 0;
   }
   update(dt: number): void {
+    this.motion.begin();
     this.anim.update(dt);
+    if (dt > 0) {
+      const p = this.root.position, turned = this.root.rotation.y - this.wasYaw;
+      // a shudder under a blow or a warp is not a stride
+      const speed = Math.min(8, Math.hypot(p.x - this.was.x, p.z - this.was.z) / dt);
+      this.motion.update(dt, {
+        speed,
+        yawRate: Math.atan2(Math.sin(turned), Math.cos(turned)) / dt,
+        look: null,
+        tired: 0.35,
+        ease: this.action === 'die' ? 0 : this.action === 'idle' || this.action === 'move' ? 1 : 0.3,
+      });
+      this.was.copy(p);
+      this.wasYaw = this.root.rotation.y;
+    }
     if (this.dying >= 0) this.dying += dt;
     this.skin.update(burnAt(this.dying));
   }

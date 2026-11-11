@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import type { QualityProfile } from '../engine/Quality';
 import type { Renderer, View } from '../engine/Renderer';
 import type { UI } from '../ui/UI';
 
@@ -17,6 +18,8 @@ export interface Scene {
   resume?(): void;
   /** Release GPU resources when the scene is left. */
   dispose?(): void;
+  /** The quality profile changed while this scene is up: resize shadow maps, light counts. */
+  quality?(q: QualityProfile): void;
   /** Objects moved every tick, drawn blended between ticks on fast displays. */
   readonly moving?: readonly THREE.Object3D[];
 }

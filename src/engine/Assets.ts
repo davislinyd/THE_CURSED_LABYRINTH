@@ -49,6 +49,8 @@ export class Assets {
   private readonly tex = new THREE.TextureLoader();
   private readonly gltf = new GLTFLoader();
   private readonly cache = new Map<string, Promise<unknown>>();
+  /** Tiled copies of textures, shared by every material that asks for the same repeat (owned here, never disposed by a scene). */
+  private readonly tiled = new Map<string, THREE.Texture>();
   /** Texture filtering for grazing views (set from the renderer's maximum). */
   anisotropy = 4;
 
@@ -97,21 +99,28 @@ export class Assets {
     });
   }
 
-  /** A standard material from a texture set; `repeat` tiles all maps (textures are cloned per repeat). */
+  /** A standard material from a texture set; `repeat` tiles all maps. The material is the caller's own; its textures are shared. */
   async material(id: string, repeat = 1, params: THREE.MeshStandardMaterialParameters = {}): Promise<THREE.MeshStandardMaterial> {
     const set = await this.textures(id);
-    const tile = (t: THREE.Texture) => {
+    // one tiled copy per texture and repeat for the whole session: a scene entered again makes no new ones
+    const tile = (t: THREE.Texture, slot: string) => {
       if (repeat === 1) return t;
-      const c = t.clone();
-      c.repeat.set(repeat, repeat);
+      const key = `${id}:${slot}:${repeat}`;
+      let c = this.tiled.get(key);
+      if (!c) {
+        c = t.clone();
+        c.repeat.set(repeat, repeat);
+        this.tiled.set(key, c);
+      }
       return c;
     };
+    const arm = tile(set.armMap, 'arm');
     return new THREE.MeshStandardMaterial({
-      map: tile(set.map),
-      normalMap: tile(set.normalMap),
-      aoMap: tile(set.armMap),
-      roughnessMap: tile(set.armMap),
-      metalnessMap: tile(set.armMap),
+      map: tile(set.map, 'map'),
+      normalMap: tile(set.normalMap, 'nor'),
+      aoMap: arm,
+      roughnessMap: arm,
+      metalnessMap: arm,
       ...params,
     });
   }
@@ -120,6 +129,11 @@ export class Assets {
   async model(id: string): Promise<THREE.Group> {
     const gltf = await this.once(`model:${id}`, () => this.gltf.loadAsync(this.url(this.entry(`model/${id}`).files[0])));
     return gltf.scene.clone(true);
+  }
+
+  /** After a lost WebGL context: prefiltered environments are render targets, their contents gone. */
+  forgetEnvironments(): void {
+    for (const k of [...this.cache.keys()]) if (k.startsWith('env:')) this.cache.delete(k);
   }
 
   /** Prefiltered environment map from an HDRI, for reflections. */

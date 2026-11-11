@@ -1,12 +1,16 @@
 import { Drift, type DriftKind } from './Drift';
 import * as THREE from 'three';
-import { crescentTexture, glowTexture, stainTexture, starTexture } from '../engine/ProcTex';
+import { crescentTexture, glowTexture, ringTexture, stainTexture, starTexture } from '../engine/ProcTex';
 
 let GLOW: THREE.Texture | null = null;
 let BLOB: THREE.Texture | null = null;
 let CRESCENT: THREE.Texture | null = null;
 let STAR: THREE.Texture | null = null;
 let STAIN: THREE.Texture | null = null;
+let RING: THREE.Texture | null = null;
+
+/** Set from the quality profile: the share of motes, sparks and drops made, and whether blows light their surroundings. */
+export const FX_QUALITY = { particles: 1, flashLight: true };
 
 const glow = () => (GLOW ??= glowTexture(64));
 
@@ -65,7 +69,7 @@ interface Stain {
   age: number;
 }
 
-const MAX_DOTS = 256;
+const MAX_DOTS = 512;
 const MAX_STAINS = 40;
 /** Stains stay this long (s), then fade out over STAIN_FADE. */
 const STAIN_HOLD = 6;
@@ -140,6 +144,8 @@ export class Fx {
   private nextStain = 0;
   private readonly drift: Drift | null;
   private time = 0;
+  /** One light for the flash of a blow: moved to where it lands, then dying away. */
+  private readonly flare = new THREE.PointLight(0xffffff, 0, 9, 1.6);
 
   /** `ambient`: what drifts through the scene (ash, dust, embers), following the hero. */
   constructor(ambient: DriftKind | null = null) {
@@ -172,12 +178,43 @@ export class Fx {
       this.stainMesh.setColorAt(i, new THREE.Color(0));
     }
     this.group.add(this.stainMesh, this.cloud);
-    this.drift = ambient && new Drift(ambient);
+    this.drift = ambient && new Drift(ambient, FX_QUALITY.particles);
     if (this.drift) this.group.add(this.drift.points);
+    // in the scene from the start (its count is part of every lit shader), dark until a blow lands
+    this.flare.visible = FX_QUALITY.flashLight;
+    this.group.add(this.flare);
   }
 
+  /** Steel on steel or a blow that lands: a burst of light, sparks thrown from it and, for the big ones, a ring. */
   spark(at: THREE.Vector3, color = 0xffd8a0, size = 1.1, life = 0.16): void {
     this.sprite(glow(), at, color, life, { from: size * 0.4, to: size * 1.4, aspect: 1 });
+    this.burst(at, null, color, Math.round(size * 6), 3 + size * 1.5);
+    this.flash(at, color, size * 10);
+    if (size >= 2) {
+      const ring = this.sprite((RING ??= ringTexture()), at, color, life * 1.6, { from: size * 0.3, to: size * 2.6, aspect: 1 });
+      ring.material.depthTest = false;
+      ring.renderOrder = 3;
+    }
+  }
+
+  /** Light the surroundings of a blow for an instant. */
+  flash(at: THREE.Vector3, color: number, intensity: number): void {
+    if (intensity < this.flare.intensity) return;
+    this.flare.position.copy(at);
+    this.flare.color.setHex(color);
+    this.flare.intensity = intensity;
+  }
+
+  /** Bright motes thrown from `at`, along `dir` if given: they fly, fall and die within half a second. */
+  burst(at: THREE.Vector3, dir: THREE.Vector3 | null, color: number, n: number, speed = 5): void {
+    n = Math.round(n * FX_QUALITY.particles);
+    for (let i = 0; i < n; i++) {
+      const a = Math.random() * Math.PI * 2, up = Math.random() * 2 - 0.5, sp = speed * (0.4 + Math.random() * 0.8);
+      const v = new THREE.Vector3(Math.cos(a), up, Math.sin(a)).multiplyScalar(sp);
+      if (dir) v.addScaledVector(dir, speed * (0.5 + Math.random() * 0.7));
+      // brighter than white: the bloom makes them glow
+      this.dot(at, v, color, 1, 0.22 + Math.random() * 0.25, 0.035 + Math.random() * 0.03, -0.7, 9, 0.93, false, 3.5);
+    }
   }
 
   /**
@@ -208,10 +245,12 @@ export class Fx {
    */
   wound(at: THREE.Vector3, from: { x: number; z: number }, path: readonly THREE.Vector3[], camera: THREE.Camera, color: number, heavy: boolean, blood: number | null): void {
     this.slash(at, path, camera, color, heavy ? 1.5 : 1.1);
-    if (blood === null) return;
     const n = path.length, dir = new THREE.Vector3(at.x - from.x, 0, at.z - from.z).normalize();
     if (n >= 2) dir.add(path[n - 1].clone().sub(path[Math.max(0, n - 3)]).setY(0).normalize());
-    this.splatter(at, dir, blood, heavy ? 18 : 10);
+    this.burst(at, dir, color, heavy ? 12 : 6, heavy ? 5 : 3.5);
+    this.flash(at, color, heavy ? 16 : 7);
+    if (blood === null) return;
+    this.splatter(at, dir, blood, Math.round((heavy ? 18 : 10) * Math.max(0.6, FX_QUALITY.particles)));
   }
 
   /** The glint of a coming blow. */
@@ -259,6 +298,7 @@ export class Fx {
   update(dt: number, hero: THREE.Vector3): Record<SoulKind, number> {
     const got = { red: 0, yellow: 0 };
     this.drift?.update((this.time += dt), hero);
+    if (this.flare.intensity > 0) this.flare.intensity = this.flare.intensity < 0.2 ? 0 : this.flare.intensity * 0.72;
     for (let i = this.sparks.length - 1; i >= 0; i--) {
       const p = this.sparks[i];
       p.age += dt;
@@ -295,6 +335,7 @@ export class Fx {
   }
 
   dispose(): void {
+    this.flare.dispose();
     this.drift?.dispose();
     this.cloud.geometry.dispose();
     (this.cloud.material as THREE.Material).dispose();
@@ -312,9 +353,9 @@ export class Fx {
     return s;
   }
 
-  private dot(at: THREE.Vector3, v: THREE.Vector3, color: number, alpha: number, life: number, size: number, grow: number, gravity: number, drag: number, stains: boolean): void {
+  private dot(at: THREE.Vector3, v: THREE.Vector3, color: number, alpha: number, life: number, size: number, grow: number, gravity: number, drag: number, stains: boolean, boost = 1): void {
     if (this.dots.length >= MAX_DOTS) return;
-    this.dots.push({ p: at.clone(), v, color: new THREE.Color(color), alpha, age: 0, life, size, grow, gravity, drag, stains });
+    this.dots.push({ p: at.clone(), v, color: new THREE.Color(color).multiplyScalar(boost), alpha, age: 0, life, size, grow, gravity, drag, stains });
   }
 
   private updateDots(dt: number): void {
@@ -333,7 +374,7 @@ export class Fx {
       const k = d.age / d.life;
       this.dotPos.set([d.p.x, d.p.y, d.p.z], i * 3);
       this.dotCol.set([d.color.r, d.color.g, d.color.b, d.alpha * (d.grow ? 1 - k : 1)], i * 4);
-      this.dotSize[i] = d.size * (1 + d.grow * k);
+      this.dotSize[i] = d.size * Math.max(0, 1 + d.grow * k);
     });
     const g = this.cloud.geometry;
     g.setDrawRange(0, D.length);

@@ -14,6 +14,8 @@ export class GameLoop {
   private raf = 0;
   /** Speed of the game clock: below 1 is slow motion. */
   scale = 1;
+  /** Per drawn frame, if set: its interval and the CPU times of its logic ticks and of its drawing (ms). */
+  probe: ((frameMs: number, updateMs: number, renderMs: number) => void) | null = null;
 
   constructor(
     private readonly update: () => void,
@@ -44,6 +46,7 @@ export class GameLoop {
     const ms = now - this.last;
     this.acc += ms * this.scale;
     this.last = now;
+    const t0 = this.probe ? performance.now() : 0;
     let steps = 0;
     while (this.acc >= STEP_MS && steps < MAX_STEPS_PER_FRAME) {
       this.beforeStep();
@@ -52,7 +55,9 @@ export class GameLoop {
       steps++;
     }
     if (steps === MAX_STEPS_PER_FRAME) this.acc = 0;
+    const t1 = this.probe ? performance.now() : 0;
     this.render(this.acc / STEP_MS, ms, now);
+    this.probe?.(ms, t1 - t0, performance.now() - t1);
     this.raf = requestAnimationFrame(this.frame);
   };
 }

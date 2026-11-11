@@ -5,8 +5,11 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { SMAAPass } from 'three/addons/postprocessing/SMAAPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { DynamicResolution } from './DynamicResolution';
 import { InkPass, Mist } from './InkPass';
+import { GpuTimer, PerfMonitor } from './PerfMonitor';
 import { washiTexture } from './ProcTex';
+import { PROFILES, QualityId, QualityProfile, Resolution, renderSize } from './Quality';
 
 /** Logical screen height, and the width of the centred safe area menus are laid out in. */
 export const SCREEN_W = 640;
@@ -17,10 +20,8 @@ const MAX_W = Math.round((SCREEN_H * 21) / 9);
 /** The logical screen right now: its width, and where the 640-wide safe area starts in it. */
 export const VIEW = { w: SCREEN_W, ox: 0 };
 
-/** Render scale: AUTO adapts to the frame rate; the others are shares of the display's pixels. */
-export type Resolution = 'auto' | '100' | '75' | '50';
-export const RESOLUTIONS: Resolution[] = ['auto', '100', '75', '50'];
-export type Effects = 'high' | 'low';
+export { RESOLUTIONS } from './Quality';
+export type { Effects, Resolution } from './Quality';
 
 export interface View {
   scene: THREE.Scene;
@@ -51,16 +52,17 @@ const FinishShader = {
     uCrt: { value: 0 },
     uImpact: { value: new THREE.Vector3() },
     uPaperAmt: { value: 1 },
-    /** 1 on HIGH: plates out of register, specks and scratches. */
-    uReg: { value: 1 },
-    uWorn: { value: 1 },
+    /** Output pixels per print unit: register, specks, grain and scan lines keep their size on any display. */
+    uUnit: { value: 1 },
   },
+  /** WORN: plates out of register, specks and scratches (compiled out on the cheapest profile). */
+  defines: {} as Record<string, string>,
   vertexShader: /* glsl */ `
     varying vec2 vUv;
     void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
   fragmentShader: /* glsl */ `
     uniform sampler2D tDiffuse, tPaper;
-    uniform float uTime, uFade, uGrain, uVignette, uSat, uContrast, uCrt, uPaperAmt, uReg, uWorn;
+    uniform float uTime, uFade, uGrain, uVignette, uSat, uContrast, uCrt, uPaperAmt, uUnit;
     uniform vec2 uRes;
     uniform vec3 uLift, uGain;
     uniform vec4 uFlash;
@@ -73,9 +75,13 @@ const FinishShader = {
       return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x), f.y);
     }
     void main() {
-      // colour plates printed a pixel apart: red one way, blue the other
-      vec2 pn = uReg / uRes;
-      vec3 c = vec3(texture2D(tDiffuse, vUv + pn * vec2(0.8, 0.5)).r, texture2D(tDiffuse, vUv).g, texture2D(tDiffuse, vUv - pn * vec2(0.6, 0.7)).b);
+      #ifdef WORN
+        // colour plates printed a pixel apart: red one way, blue the other
+        vec2 pn = uUnit / uRes;
+        vec3 c = vec3(texture2D(tDiffuse, vUv + pn * vec2(0.8, 0.5)).r, texture2D(tDiffuse, vUv).g, texture2D(tDiffuse, vUv - pn * vec2(0.6, 0.7)).b);
+      #else
+        vec3 c = texture2D(tDiffuse, vUv).rgb;
+      #endif
       if (uImpact.z > 0.001) {
         // a heavy blow: the picture smears outward from the hit, its colours parting
         vec2 d = vUv - uImpact.xy;
@@ -111,8 +117,9 @@ const FinishShader = {
       float n = vnoise(vUv * vec2(9.0, 6.0)) * 0.6 + vnoise(vUv * 23.0) * 0.4;
       c *= 1.0 - uVignette * clamp(e + (n - 0.5) * 0.3 * e, 0.0, 1.0);
       c = mix(c, vec3(0.045, 0.028, 0.02), smoothstep(0.55, 0.9, e * 1.25 + (n - 0.5) * 0.45) * 0.55);
-      if (uWorn > 0.5) {
-        vec2 cell = floor(vUv * uRes / 2.0);
+      #ifdef WORN
+      {
+        vec2 cell = floor(vUv * uRes / (2.0 * uUnit));
         c *= 1.0 - 0.55 * step(0.9993, hash(cell + 17.0));
         c += 0.12 * step(0.99985, hash(cell + 91.0));
         float col = floor(vUv.x * 60.0);
@@ -121,10 +128,13 @@ const FinishShader = {
         float sc = step(0.955, hash(vec2(col, 3.0))) * (1.0 - smoothstep(0.0, 0.0012, abs(vUv.x - cx))) * step(y0, vUv.y) * step(vUv.y, y1);
         c = mix(c, c * 0.72, sc * 0.7);
       }
-      vec2 px = floor(vUv * uRes);
-      c += (hash(px + fract(uTime * 7.31) * 113.0) - 0.5) * uGrain;
+      #endif
+      if (uGrain > 0.0) {
+        vec2 px = floor(vUv * uRes / uUnit);
+        c += (hash(px + fract(uTime * 7.31) * 113.0) - 0.5) * uGrain;
+      }
       if (uCrt > 0.5) {
-        float s = sin(vUv.y * uRes.y * 3.14159265);
+        float s = sin(vUv.y * uRes.y / uUnit * 3.14159265);
         c *= 0.86 + 0.14 * s * s;
       }
       c = mix(c, uFlash.rgb, uFlash.a);
@@ -134,8 +144,14 @@ const FinishShader = {
 };
 
 /**
- * WebGL renderer filling the window (10:7 up to 21:9) at the display's resolution
- * or a share of it, with ink lines, bloom, SMAA and the woodblock finish.
+ * WebGL renderer filling the window (10:7 up to 21:9), with ink lines, bloom, SMAA and the
+ * woodblock finish.
+ *
+ * Pipeline: scene (linear, half float) -> ink lines / halo / mist -> bloom -> tone map and
+ * sRGB (OutputPass) -> SMAA -> finish. Everything before the finish runs at the internal
+ * size, a share of the canvas within the quality profile's pixel budget; the finish fills
+ * the canvas itself, so paper, grain and the print's wear stay sharp and keep their size
+ * while the internal size moves with the frame rate.
  */
 export class Renderer {
   readonly gl: THREE.WebGLRenderer;
@@ -148,31 +164,44 @@ export class Renderer {
   private readonly blank = new THREE.Scene();
   private readonly blankCam = new THREE.OrthographicCamera();
   resolution: Resolution = 'auto';
-  effects: Effects = 'high';
+  quality: QualityProfile = PROFILES.high;
   /** CSS size of the fitted screen, for the UI canvas and mouse mapping. */
   cssW = SCREEN_W;
   cssH = SCREEN_H;
   onResize: (() => void) | null = null;
-  /** AUTO's current share of the display's pixels, and the share that last ran too slow. */
-  private dyn = 1;
-  private ceiling = 1;
-  private ceilingUntil = 0;
-  private slow = 0;
-  private fast = 0;
+  /** The WebGL context came back after a loss: GPU-side caches (environment maps) must be rebuilt. */
+  onContextRestored: (() => void) | null = null;
+  contextLost = false;
+  readonly perf: PerfMonitor;
+  private readonly dyn = new DynamicResolution();
+  private readonly timer: GpuTimer;
+  /** GPU time of a recent frame (ms), while the monitor is on and the browser has a timer query. */
+  gpuMs: number | null = null;
+  /** Sizes last given to the GPU, so nothing is reallocated when they have not changed. */
+  private outW = 0;
+  private outH = 0;
+  private inW = 0;
+  private inH = 0;
 
   constructor(private readonly canvas: HTMLCanvasElement, private readonly host: HTMLElement) {
     this.gl = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
     this.gl.setPixelRatio(1);
+    // counts add up over all the passes of a frame (reset in render)
+    this.gl.info.autoReset = false;
     this.gl.toneMapping = THREE.ACESFilmicToneMapping;
     this.gl.toneMappingExposure = 1.25;
     this.gl.shadowMap.enabled = true;
     this.gl.shadowMap.type = THREE.PCFShadowMap;
     this.blank.background = new THREE.Color(0x000000);
+    this.perf = new PerfMonitor(host);
+    this.timer = new GpuTimer(this.gl.getContext());
     // the scene's depth is kept in a texture for the ink pass
     const target = new THREE.WebGLRenderTarget(SCREEN_W, SCREEN_H, { type: THREE.HalfFloatType, depthTexture: new THREE.DepthTexture(SCREEN_W, SCREEN_H) });
     this.composer = new EffectComposer(this.gl, target);
     this.renderPass = new RenderPass(this.blank, this.blankCam);
-    this.bloom = new UnrealBloomPass(new THREE.Vector2(SCREEN_W, SCREEN_H), 0.55, 0.5, 0.8);
+    this.bloom = new UnrealBloomPass(new THREE.Vector2(SCREEN_W, SCREEN_H), 0.55, 0.5, 0.82);
+    // a soft knee: lights come into the bloom gradually instead of popping over the threshold
+    (this.bloom as unknown as { highPassUniforms: Record<string, THREE.IUniform> }).highPassUniforms.smoothWidth.value = 0.18;
     this.finish = new ShaderPass(FinishShader);
     this.finish.uniforms.tPaper.value = washiTexture();
     this.smaa = new SMAAPass();
@@ -184,78 +213,104 @@ export class Renderer {
     this.composer.addPass(this.finish);
     window.addEventListener('resize', () => this.resize());
     document.addEventListener('fullscreenchange', () => this.resize());
+    canvas.addEventListener('webglcontextlost', (e) => {
+      // without this the browser never restores the context
+      e.preventDefault();
+      this.contextLost = true;
+      this.timer.reset();
+      this.notice('繪圖裝置中斷，正在恢復… / GRAPHICS CONTEXT LOST, RESTORING…');
+    });
+    canvas.addEventListener('webglcontextrestored', () => {
+      // three.js rebuilds programs, textures and render targets as they are next used
+      this.contextLost = false;
+      this.timer.reset();
+      this.notice(null);
+      this.outW = this.inW = 0;
+      this.resize();
+      this.onContextRestored?.();
+    });
     this.resize();
   }
 
-  /** Fill the host (within 10:7 to 21:9) and size the internal buffer. */
+  /** A line over the screen while the context is lost (plain DOM: the game cannot draw). */
+  private notice(text: string | null): void {
+    let el = this.host.querySelector<HTMLElement>('#gl-notice');
+    if (!text) return el?.remove();
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'gl-notice';
+      el.style.cssText = 'position:absolute;left:0;right:0;top:45%;text-align:center;z-index:6;color:#e8d8a8;font:14px sans-serif;pointer-events:none';
+      this.host.appendChild(el);
+    }
+    el.textContent = text;
+  }
+
+  /** Share of the profile's resolution in use: AUTO's current one, or the player's choice. */
+  get scale(): number {
+    return this.resolution === 'auto' ? this.dyn.scale : Number(this.resolution) / 100;
+  }
+
+  /** Fill the host (within 10:7 to 21:9) and size the canvas and the internal buffers. */
   resize(): void {
-    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const dpr = window.devicePixelRatio || 1;
     const aw = Math.max(1, this.host.clientWidth), ah = Math.max(1, this.host.clientHeight);
     VIEW.w = Math.round(Math.max(SCREEN_W, Math.min(MAX_W, (aw / ah) * SCREEN_H)));
     VIEW.ox = (VIEW.w - SCREEN_W) / 2;
-    const scale = Math.max(0.25, Math.min(aw / VIEW.w, ah / SCREEN_H));
-    this.cssW = Math.floor(VIEW.w * scale);
-    this.cssH = Math.floor(SCREEN_H * scale);
-    const share = this.resolution === 'auto' ? this.dyn : Number(this.resolution) / 100;
-    const w = Math.max(320, Math.min(3840, Math.round(this.cssW * dpr * share)));
-    const h = Math.round((w * this.cssH) / this.cssW);
-    this.gl.setSize(w, h, false);
-    this.composer.setSize(w, h);
+    const fit = Math.max(0.25, Math.min(aw / VIEW.w, ah / SCREEN_H));
+    this.cssW = Math.floor(VIEW.w * fit);
+    this.cssH = Math.floor(SCREEN_H * fit);
+    const { outW, outH, inW, inH } = renderSize(this.cssW, this.cssH, dpr, this.quality, this.scale);
+    if (outW !== this.outW || outH !== this.outH) {
+      this.gl.setSize(outW, outH, false);
+      this.finish.uniforms.uRes.value.set(outW, outH);
+      this.finish.uniforms.uUnit.value = Math.max(1, outH / 900);
+    }
+    if (inW !== this.inW || inH !== this.inH) {
+      this.composer.setSize(inW, inH);
+      this.ink.setSize(inW, inH);
+    }
+    this.outW = outW;
+    this.outH = outH;
+    this.inW = inW;
+    this.inH = inH;
     this.canvas.style.width = `${this.cssW}px`;
     this.canvas.style.height = `${this.cssH}px`;
-    this.finish.uniforms.uRes.value.set(w, h);
-    this.ink.setSize(w, h);
-    this.gl.shadowMap.needsUpdate = true;
+    Object.assign(this.perf.size, { renderW: inW, renderH: inH, outputW: outW, outputH: outH, dpr, scale: this.scale, quality: this.quality.id });
     this.onResize?.();
   }
 
-  apply(resolution: Resolution, effects: Effects, crt: boolean): void {
-    const changed = resolution !== this.resolution;
+  apply(resolution: Resolution, quality: QualityId, crt: boolean): void {
+    const q = PROFILES[quality];
+    const changed = resolution !== this.resolution || q !== this.quality;
     this.resolution = resolution;
-    this.effects = effects;
-    this.bloom.enabled = effects === 'high';
-    this.finish.uniforms.uGrain.value = effects === 'high' ? 0.035 : 0;
-    this.finish.uniforms.uReg.value = this.finish.uniforms.uWorn.value = effects === 'high' ? 1 : 0;
-    this.ink.uniforms.uAO.value = effects === 'high' ? 0.4 : 0;
+    this.quality = q;
+    this.bloom.enabled = q.bloom > 0;
+    this.bloom.strength = q.bloom;
+    this.smaa.enabled = q.smaa;
+    this.ink.setQuality(q.aoTaps, q.creases);
+    const f = this.finish.material as THREE.ShaderMaterial;
+    if (!!f.defines.WORN !== q.worn) {
+      if (q.worn) f.defines.WORN = '';
+      else delete f.defines.WORN;
+      f.needsUpdate = true;
+    }
+    this.finish.uniforms.uGrain.value = q.grain;
     this.finish.uniforms.uCrt.value = crt ? 1 : 0;
     if (changed) {
-      this.dyn = this.ceiling = 1;
+      this.dyn.reset(q.minScale);
       this.resize();
     }
   }
 
-  /**
-   * AUTO render scale, fed every drawn frame with its interval: below about 50 fps
-   * for a while it steps down (to 60 % at least); after a long smooth run it tries
-   * one step up again, but not to a scale that was too slow in the last minute.
-   */
+  /** AUTO render scale, fed every drawn frame with its interval (see DynamicResolution). */
   pace(ms: number, now: number): void {
-    if (this.resolution !== 'auto' || ms > 100) return;
-    if (ms > 20) {
-      this.slow++;
-      this.fast = 0;
-    } else {
-      this.slow = Math.max(0, this.slow - 1);
-      if (ms < 18) this.fast++;
-    }
-    if (this.slow > 45 && this.dyn > 0.6) {
-      this.ceiling = this.dyn;
-      this.ceilingUntil = now + 60000;
-      this.dyn = Math.max(0.6, Math.round((this.dyn - 0.1) * 10) / 10);
-      this.slow = this.fast = 0;
-      this.resize();
-    } else if (this.fast > 600 && this.dyn < 1) {
-      this.fast = 0;
-      const up = Math.min(1, Math.round((this.dyn + 0.1) * 10) / 10);
-      if (up < this.ceiling || now > this.ceilingUntil) {
-        this.dyn = up;
-        this.resize();
-      }
-    }
+    if (this.resolution !== 'auto' || this.contextLost) return;
+    if (this.dyn.sample(ms, now, this.perf.enabled ? this.gpuMs : null)) this.resize();
   }
 
   /** `impact`: a heavy blow's smear, centre (0..1) and strength (see SceneManager.impact). */
   render(view: View | null, fade: number, flash: THREE.Vector4 | null, time: number, impact: THREE.Vector3 | null = null): void {
+    if (this.contextLost) return;
     const v = view ?? { scene: this.blank, camera: this.blankCam };
     const aspect = VIEW.w / SCREEN_H;
     if (v.camera instanceof THREE.PerspectiveCamera && v.camera.aspect !== aspect) {
@@ -273,6 +328,17 @@ export class Renderer {
     else u.uFlash.value.w = 0;
     if (impact) u.uImpact.value.copy(impact);
     else u.uImpact.value.z = 0;
-    this.composer.render();
+    this.gl.info.reset();
+    if (this.perf.enabled) {
+      const g = this.timer.poll();
+      if (g !== null) this.gpuMs = g;
+      this.timer.begin();
+      this.composer.render();
+      this.timer.end();
+    } else this.composer.render();
+  }
+
+  get gpuTimerSupported(): boolean {
+    return this.timer.supported;
   }
 }

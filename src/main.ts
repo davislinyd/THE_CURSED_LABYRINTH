@@ -1,4 +1,4 @@
-import { Game } from './core/Game';
+import { Game, bootOptions } from './core/Game';
 
 const game = new Game(
   document.getElementById('display') as HTMLCanvasElement,
@@ -11,7 +11,7 @@ document.getElementById('btn-full')?.addEventListener('click', (e) => {
   (e.currentTarget as HTMLElement).blur();
 });
 
-void game.start();
+void game.start(bootOptions(location.search));
 
 // development builds only: a handle for automated play-testing
 if (import.meta.env.DEV) (window as unknown as { __game: Game }).__game = game;

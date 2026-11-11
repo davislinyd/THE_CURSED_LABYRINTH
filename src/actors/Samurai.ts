@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { lamellarTextures } from '../engine/ProcTex';
 import { cyl, part, swordGrip } from './Build';
 import { BoneName, Pose, Rig, buildRig, makeClip, makeLoop, mirror } from './Rig';
+import type { Secondary } from './Secondary';
 
 /** Shared materials (built once). */
 let MATS: ReturnType<typeof makeMaterials> | null = null;
@@ -46,8 +47,12 @@ function katana(parent: THREE.Object3D, m: SamuraiMaterials): THREE.Mesh {
 
 export interface SamuraiModel {
   rig: Rig;
-  blade: THREE.Mesh;
-  mats: SamuraiMaterials;
+  /** Where the blade is: its origin 0.36 m below the point, +z along the blade (see SwordTrail). */
+  blade: THREE.Object3D;
+  /** `edge` flares while the blade is live. */
+  mats: { edge: THREE.MeshStandardMaterial };
+  /** Hanging armour and cloth that swing on their own (the Blender-made figure only). */
+  secondary?: Secondary;
 }
 
 /** The hero: lacquered armour in black and crimson, a lantern-flame crest, katana in hand. */

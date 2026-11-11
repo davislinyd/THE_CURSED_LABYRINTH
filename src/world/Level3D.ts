@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
 import type { Assets } from '../engine/Assets';
 import { rng } from '../engine/ProcTex';
+import type { QualityProfile } from '../engine/Quality';
+import { surfaceDetail } from '../engine/Shading';
 import { Dungeon, ThemeId } from './DungeonMap';
 import { CELL, DIR_X, DIR_Y, WALL_H, cellKind, center, layout } from './Grid3D';
 
@@ -90,14 +92,23 @@ export interface Level {
   theme: LevelTheme;
 }
 
-/** Static rock: floor, vaulted ceiling and bulging walls of every open cell, plus scattered dressing. */
-export async function buildLevel(d: Dungeon, theme: ThemeId, assets: Assets): Promise<Level> {
+/**
+ * Static rock: floor, vaulted ceiling and bulging walls of every open cell, plus scattered dressing.
+ * With a quality profile `q` (the web game): damp, mossy rock, rubble along the walls and
+ * stalactites under the roof, all instanced; without one, the plain level as before.
+ */
+export async function buildLevel(d: Dungeon, theme: ThemeId, assets: Assets, q?: QualityProfile): Promise<Level> {
   const th = THEMES[theme];
   const [wallMat, floorMat, ceilMat] = await Promise.all([
     assets.material(th.wall, 1, { color: 0x9a948a }),
     assets.material(th.floor, 1, { color: 0x8a8478 }),
     assets.material(th.ceil, 1, { color: 0x6a6660 }),
   ]);
+  if (q?.detail) {
+    surfaceDetail(wallMat, { macro: 0.6, moss: 0.55, wet: 0.4, size: 5 });
+    surfaceDetail(floorMat, { macro: 0.5, wet: 0.6, size: 4 });
+    surfaceDetail(ceilMat, { macro: 0.5, size: 6 });
+  }
   const group = new THREE.Group();
   const { open, walls } = layout(d);
   const floor = new Surface(), ceil = new Surface(), wall = new Surface();
@@ -121,6 +132,8 @@ export async function buildLevel(d: Dungeon, theme: ThemeId, assets: Assets): Pr
   const rt = rng(d.def.id.charCodeAt(1) * 211 + 5);
   const fungus = new THREE.MeshBasicMaterial({ color: 0x5ad0b0 });
   const fungusGeo = new THREE.SphereGeometry(0.05, 6, 4);
+  /** With a profile, every glowing cap goes into one instanced mesh instead of a mesh each. */
+  const caps: THREE.Matrix4[] = [];
   const busy = (x: number, y: number) => !'.@E'.includes(d.ch(x, y));
   for (const w of walls) {
     if (cellKind(w.ch) !== 'wall' || busy(w.x, w.y)) continue;
@@ -147,7 +160,10 @@ export async function buildLevel(d: Dungeon, theme: ThemeId, assets: Assets): Pr
         const f = new THREE.Mesh(fungusGeo, fungus);
         f.position.set(base.x + (r() - 0.5) * 0.5, base.y + (r() - 0.5) * 0.4, base.z + (r() - 0.5) * 0.5);
         f.scale.setScalar(0.5 + r() * 1.2);
-        group.add(f);
+        if (q) {
+          f.updateMatrix();
+          caps.push(f.matrix);
+        } else group.add(f);
       }
     } else if (roll < 0.82) {
       const l = lantern.clone();
@@ -164,6 +180,51 @@ export async function buildLevel(d: Dungeon, theme: ThemeId, assets: Assets): Pr
       t.scale.setScalar(0.95 + rt() * 0.2);
       group.add(t);
     }
+  }
+  if (q) {
+    const instanced = (geo: THREE.BufferGeometry, mat: THREE.Material, list: THREE.Matrix4[], shadow: boolean) => {
+      if (!list.length) return;
+      const m = new THREE.InstancedMesh(geo, mat, list.length);
+      list.forEach((x, i) => m.setMatrixAt(i, x));
+      m.castShadow = shadow;
+      m.receiveShadow = true;
+      group.add(m);
+    };
+    instanced(fungusGeo, fungus, caps, false);
+    // rubble at the foot of the walls and stalactites above them (their own RNG: the layout above stays put)
+    const rd = rng(d.def.id.charCodeAt(1) * 307 + 11);
+    const rubble: THREE.Matrix4[] = [], spikes: THREE.Matrix4[] = [];
+    const q4 = new THREE.Quaternion(), e = new THREE.Euler(), v = new THREE.Vector3(), s = new THREE.Vector3();
+    for (const w of walls) {
+      if (cellKind(w.ch) !== 'wall') continue;
+      const cx = center(w.x), cz = center(w.y);
+      const at = (off: number, inset: number) => v.set(cx + DIR_X[w.dir] * (CELL / 2 - inset) + (w.dir % 2 === 0 ? off : 0), 0, cz + DIR_Y[w.dir] * (CELL / 2 - inset) + (w.dir % 2 === 1 ? off : 0));
+      for (let i = 0, n = Math.round(q.clutter * (2 + rd() * 5)); i < n; i++) {
+        const k = 0.5 + rd() * 1.6;
+        at((rd() - 0.5) * 3.6, 0.5 + rd() * 0.7).setY(0.03);
+        rubble.push(new THREE.Matrix4().compose(v, q4.setFromEuler(e.set(rd() * 0.5, rd() * 6.28, rd() * 0.5)), s.set(k, k * (0.45 + rd() * 0.35), k * (0.7 + rd() * 0.5))));
+      }
+      if (rd() < 0.5 * q.clutter) {
+        for (let i = 0, n = 1 + Math.floor(rd() * 3); i < n; i++) {
+          const len = 0.5 + rd() * 0.9, wide = 0.6 + rd() * 0.8;
+          // hanging close to the wall, short enough to clear the hero's head and the camera
+          at((rd() - 0.5) * 3.2, 0.35 + rd() * 0.5).setY(WALL_H - 0.15 - len / 2);
+          spikes.push(new THREE.Matrix4().compose(v, q4.setFromEuler(e.set(Math.PI + (rd() - 0.5) * 0.14, rd() * 6.28, (rd() - 0.5) * 0.14)), s.set(wide, len, wide)));
+        }
+      }
+    }
+    const rubbleMat = new THREE.MeshStandardMaterial({ color: 0x77726a, roughness: 0.95, flatShading: true });
+    instanced(new THREE.IcosahedronGeometry(0.13, 0), rubbleMat, rubble, false);
+    const spikeGeo = new THREE.ConeGeometry(0.16, 1, 6, 3);
+    const sp = spikeGeo.attributes.position;
+    for (let i = 0; i < sp.count; i++) {
+      // knotted, not turned on a lathe
+      const y = sp.getY(i), k = 1 + 0.2 * Math.sin(y * 9 + Math.atan2(sp.getX(i), sp.getZ(i)) * 2);
+      sp.setX(i, sp.getX(i) * k);
+      sp.setZ(i, sp.getZ(i) * k);
+    }
+    spikeGeo.computeVertexNormals();
+    instanced(spikeGeo, wallMat, spikes, false);
   }
   return { group, lanterns, theme: th };
 }

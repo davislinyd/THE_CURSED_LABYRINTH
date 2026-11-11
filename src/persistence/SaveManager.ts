@@ -1,5 +1,5 @@
 import { GameState, newGameState } from '../core/GameState';
-import { Effects, RESOLUTIONS, Resolution } from '../engine/Renderer';
+import { Effects, QualityId, RESOLUTIONS, Resolution, isQuality, qualityFromLegacy } from '../engine/Quality';
 import { Lang, browserLang } from '../i18n';
 
 const SAVE_KEY = 'yuto-makyo.save.v2';
@@ -13,6 +13,9 @@ export interface Settings {
   muted: boolean;
   lang: Lang;
   resolution: Resolution;
+  /** Rendering quality profile. */
+  quality: QualityId;
+  /** Legacy (before the profiles): kept in step with `quality` for older builds reading the same settings. */
   effects: Effects;
   crt: boolean;
   /** Labyrinth corner map. */
@@ -25,6 +28,7 @@ export const DEFAULT_SETTINGS: Settings = {
   muted: false,
   lang: browserLang(),
   resolution: 'auto',
+  quality: 'high',
   effects: 'high',
   crt: false,
   minimap: true,
@@ -38,7 +42,21 @@ function storage(): Storage | null {
   }
 }
 
+/** Settings from stored data of this or an earlier build: missing fields take their defaults, old choices are mapped. */
+export function migrateSettings(data: Partial<Settings> | null): Settings {
+  const s: Settings = { ...DEFAULT_SETTINGS, ...data };
+  // the PS2 / HD / native choices of earlier builds
+  if (!RESOLUTIONS.includes(s.resolution)) s.resolution = 'auto';
+  // before the profiles there was EFFECTS HIGH / LOW
+  if (!isQuality(data?.quality)) s.quality = data ? qualityFromLegacy(data.effects) : DEFAULT_SETTINGS.quality;
+  s.effects = s.quality === 'performance' ? 'low' : 'high';
+  return s;
+}
+
 export const SaveManager = {
+  /** Benchmark runs: nothing is written, so the player's journey and settings stay as they are. */
+  readOnly: false,
+
   hasSave(): boolean {
     return !!storage()?.getItem(SAVE_KEY);
   },
@@ -49,6 +67,7 @@ export const SaveManager = {
   },
 
   save(state: GameState): boolean {
+    if (this.readOnly) return false;
     try {
       storage()?.setItem(SAVE_KEY, JSON.stringify(state));
       return true;
@@ -80,6 +99,7 @@ export const SaveManager = {
   },
 
   clear(): void {
+    if (this.readOnly) return;
     try {
       storage()?.removeItem(SAVE_KEY);
     } catch {
@@ -90,16 +110,14 @@ export const SaveManager = {
   loadSettings(): Settings {
     try {
       const raw = storage()?.getItem(SETTINGS_KEY);
-      const s: Settings = raw ? { ...DEFAULT_SETTINGS, ...(JSON.parse(raw) as Partial<Settings>) } : { ...DEFAULT_SETTINGS };
-      // the PS2 / HD / native choices of earlier builds
-      if (!RESOLUTIONS.includes(s.resolution)) s.resolution = 'auto';
-      return s;
+      return migrateSettings(raw ? (JSON.parse(raw) as Partial<Settings>) : null);
     } catch {
       return { ...DEFAULT_SETTINGS };
     }
   },
 
   saveSettings(s: Settings): void {
+    if (this.readOnly) return;
     try {
       storage()?.setItem(SETTINGS_KEY, JSON.stringify(s));
     } catch {

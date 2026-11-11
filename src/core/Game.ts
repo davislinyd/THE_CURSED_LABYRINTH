@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { Assets } from '../engine/Assets';
 import { loadFonts } from '../engine/Fonts';
 import { Interp } from '../engine/Interp';
+import { QualityId, Resolution, isQuality, RESOLUTIONS } from '../engine/Quality';
 import { Renderer, SCREEN_H, VIEW } from '../engine/Renderer';
 import { isZh, setKeyNames, setLang, t } from '../i18n';
 import { SaveManager, Settings } from '../persistence/SaveManager';
@@ -17,6 +18,8 @@ import { TitleScene } from '../scenes/TitleScene';
 import { PauseMenu } from '../ui/PauseMenu';
 import { COL, UI } from '../ui/UI';
 import { Fatigue } from '../combat/Fatigue';
+import { FX_QUALITY } from '../world/Fx';
+import { BENCH_IDS, BenchId, Benchmark } from './Benchmark';
 import { CheatCode } from './Cheat';
 import { Difficulty, RULES } from './Difficulty';
 import { GameLoop } from './GameLoop';
@@ -29,6 +32,26 @@ import { SceneManager } from './SceneManager';
 
 /** The seal each guardian guards. */
 export const SEAL_OF_BOSS: Record<BossId, KeyItemId | null> = { rotroot: 'mirror', centipede: 'jewel', gashadokuro: 'flute', meiou: null };
+
+/** What the address may ask for: ?perf, ?bench=plains|grotto|boss, &quality=, &res=, &seconds=. */
+export interface BootOptions {
+  perf?: boolean;
+  bench?: BenchId;
+  quality?: QualityId;
+  resolution?: Resolution;
+  seconds?: number;
+}
+
+export function bootOptions(search: string): BootOptions {
+  const p = new URLSearchParams(search), o: BootOptions = {};
+  const bench = p.get('bench'), quality = p.get('quality'), res = p.get('res'), seconds = Number(p.get('seconds'));
+  if (p.has('perf')) o.perf = true;
+  if (bench && (BENCH_IDS as string[]).includes(bench)) o.bench = bench as BenchId;
+  if (isQuality(quality)) o.quality = quality;
+  if (res && (RESOLUTIONS as string[]).includes(res)) o.resolution = res as Resolution;
+  if (seconds > 0) o.seconds = Math.min(600, seconds);
+  return o;
+}
 
 /** Top-level game object: owns the renderer, interface, input, audio, scenes and the current journey. */
 export class Game {
@@ -53,10 +76,11 @@ export class Game {
   /** Ticks of slow motion left. */
   private slowFor = 0;
   private labelledDevice: Device | null = null;
+  /** A measured run asked for in the address (see Benchmark). */
+  bench: Benchmark | null = null;
 
   constructor(display: HTMLCanvasElement, uiCanvas: HTMLCanvasElement, private readonly host: HTMLElement) {
     this.gfx = new Renderer(display, host);
-    this.assets.anisotropy = Math.min(16, this.gfx.gl.capabilities.getMaxAnisotropy());
     this.ui = new UI(uiCanvas);
     this.gfx.onResize = () => this.ui.resize(this.gfx.cssW, this.gfx.cssH);
     this.ui.resize(this.gfx.cssW, this.gfx.cssH);
@@ -68,6 +92,13 @@ export class Game {
     this.input.onFirstGesture = () => this.audio.unlock();
     this.input.onFullscreenKey = () => this.toggleFullscreen();
     this.applySettings();
+    this.gfx.onContextRestored = () => void this.restoreContext();
+    // F3: the performance monitor (development and tuning; off by default)
+    window.addEventListener('keydown', (e) => {
+      if (e.code !== 'F3') return;
+      e.preventDefault();
+      this.setPerf(!this.gfx.perf.enabled);
+    });
     this.loop = new GameLoop(
       () => this.update(),
       (alpha, ms, now) => this.render(alpha, ms, now),
@@ -76,10 +107,43 @@ export class Game {
     window.addEventListener('blur', () => this.autoPause());
   }
 
-  async start(): Promise<void> {
+  async start(opt: BootOptions = {}): Promise<void> {
+    if (opt.bench) {
+      // a measured run: fixed scale unless asked otherwise, nothing stored (Benchmark sets SaveManager.readOnly)
+      this.bench = new Benchmark(this, opt.bench, opt.seconds);
+      this.settings = { ...this.settings, resolution: opt.resolution ?? '100', muted: true };
+      opt.perf = true;
+    }
+    if (opt.quality || (opt.resolution && !opt.bench)) {
+      // a choice in the address holds for this visit only
+      this.settings = { ...this.settings, quality: opt.quality ?? this.settings.quality, resolution: opt.resolution ?? this.settings.resolution };
+      const stored = SaveManager.readOnly;
+      SaveManager.readOnly = true;
+      this.applySettings();
+      SaveManager.readOnly = stored;
+    } else if (opt.bench) this.applySettings();
+    if (opt.perf) this.setPerf(true);
     this.loop.start();
     await loadFonts();
     this.scenes.change(new LoadingScene(this), false);
+  }
+
+  /** The boot load is done: on to the title, or into the benchmark. */
+  booted(): void {
+    if (this.bench) this.bench.begin();
+    else this.scenes.change(new TitleScene(this));
+  }
+
+  setPerf(on: boolean): void {
+    this.gfx.perf.setEnabled(on);
+    this.loop.probe = on ? (ms, upd, rnd) => this.gfx.perf.sample(ms, upd, rnd, this.gfx.gpuMs, this.gfx.gl.info) : null;
+  }
+
+  /** The WebGL context came back: the prefiltered environment lived on the GPU and has to be made again. */
+  private async restoreContext(): Promise<void> {
+    this.assets.forgetEnvironments();
+    const scene = this.scenes.current?.view?.scene;
+    if (scene?.environment) scene.environment = await this.assets.environment('moonlit_golf', this.gfx.gl);
   }
 
   private update(): void {
@@ -87,6 +151,7 @@ export class Game {
     if (this.slowFor > 0 && --this.slowFor === 0) this.loop.scale = 1;
     this.ui.frame = this.frame;
     this.input.poll();
+    this.bench?.tick();
     this.fatigue.rate = RULES[this.state.difficulty].tire;
     if (this.input.device !== this.labelledDevice) this.labelPage();
     const cur = this.scenes.current;
@@ -140,7 +205,7 @@ export class Game {
 
   private autoPause(): void {
     const cur = this.scenes.current;
-    if (cur?.pausable && !this.scenes.hasOverlay && !this.scenes.busy) this.openPause();
+    if (!this.bench?.running && cur?.pausable && !this.scenes.hasOverlay && !this.scenes.busy) this.openPause();
   }
 
   toggleFullscreen(): void {
@@ -155,7 +220,12 @@ export class Game {
     this.audio.muted = s.muted;
     this.audio.applyVolumes();
     setLang(s.lang);
-    this.gfx.apply(s.resolution, s.effects, s.crt);
+    const before = this.gfx.quality;
+    this.gfx.apply(s.resolution, s.quality, s.crt);
+    this.assets.anisotropy = Math.min(this.gfx.quality.anisotropy, this.gfx.gl.capabilities.getMaxAnisotropy());
+    FX_QUALITY.particles = this.gfx.quality.particles;
+    FX_QUALITY.flashLight = this.gfx.quality.id !== 'performance';
+    if (this.gfx.quality !== before) this.scenes.current?.quality?.(this.gfx.quality);
     SaveManager.saveSettings(s);
     this.labelPage();
   }

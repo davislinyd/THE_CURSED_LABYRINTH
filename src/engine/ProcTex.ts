@@ -59,6 +59,20 @@ export function crescentTexture(): THREE.CanvasTexture {
   return toTexture(c);
 }
 
+/** A thin bright ring fading to both sides: a shock spreading from a parry. */
+export function ringTexture(size = 128): THREE.CanvasTexture {
+  const [c, g] = canvas(size);
+  const h = size / 2, grad = g.createRadialGradient(h, h, 0, h, h, h);
+  grad.addColorStop(0, 'rgba(255,255,255,0)');
+  grad.addColorStop(0.62, 'rgba(255,255,255,0)');
+  grad.addColorStop(0.8, 'rgba(255,255,255,0.9)');
+  grad.addColorStop(0.9, 'rgba(255,255,255,0.35)');
+  grad.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = grad;
+  g.fillRect(0, 0, size, size);
+  return toTexture(c);
+}
+
 /** A four-pointed glint with a soft core. */
 export function starTexture(size = 64): THREE.CanvasTexture {
   const [c, g] = canvas(size);
@@ -196,6 +210,26 @@ export function noiseTexture(seed: number, a: string, b: string, size = 256, sca
   }
   g.putImageData(img, 0, 0);
   const t = toTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  return t;
+}
+
+/** Woven cloth as a bump map: warp and weft threads, a little uneven. Tiles. */
+export function weaveTexture(size = 128, threads = 32): THREE.CanvasTexture {
+  const [c, g] = canvas(size);
+  const r = rng(4711), step = size / threads;
+  g.fillStyle = '#6a6a6a';
+  g.fillRect(0, 0, size, size);
+  for (let j = 0; j < threads; j++) {
+    for (let i = 0; i < threads; i++) {
+      // plain weave: each thread goes over one, under one
+      const over = (i + j) % 2 === 0, v = Math.round((over ? 190 : 70) + (r() - 0.5) * 50);
+      g.fillStyle = `rgb(${v},${v},${v})`;
+      if (over) g.fillRect(i * step, j * step + step * 0.15, step, step * 0.7);
+      else g.fillRect(i * step + step * 0.15, j * step, step * 0.7, step);
+    }
+  }
+  const t = toTexture(c, false);
   t.wrapS = t.wrapT = THREE.RepeatWrapping;
   return t;
 }

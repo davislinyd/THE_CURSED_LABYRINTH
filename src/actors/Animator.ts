@@ -37,6 +37,16 @@ export class Animator<N extends string> {
     this.rate = 1 / fade;
   }
 
+  /** How much of the pose a clip makes up now (0..1). */
+  weight(name: N): number {
+    return this.weights.get(name) ?? 0;
+  }
+
+  /** Where a clip is (s). */
+  time(name: N): number {
+    return this.actions.get(name)!.time;
+  }
+
   /** Playback speed of a clip; negative plays it backwards. */
   speed(name: N, scale: number): void {
     this.actions.get(name)!.timeScale = scale;
