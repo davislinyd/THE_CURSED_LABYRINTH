@@ -6,6 +6,7 @@ import { Afterimages } from '../world/Afterimages';
 import { P2, SolidFn, collide } from '../world/Grid3D';
 import { SwordTrail } from '../world/SwordTrail';
 import { Animator } from './Animator';
+import { BodyMotion } from './BodyMotion';
 import { SAMURAI_CLIPS, SamuraiClip, SamuraiModel, buildSamurai } from './Samurai';
 
 /** Metres per second at a walk (running and trudging scale it: see Fatigue). */
@@ -22,6 +23,15 @@ const SOFT_ANGLE = (70 * Math.PI) / 180;
 const RECOVER_TURN = 4;
 /** Crossfade (seconds) between standing and walking: the sword comes down to the carry or up to the guard. */
 const STRIDE_FADE = 0.2;
+/**
+ * The stride clip covers about 2 m of ground in its 0.68 s; a walk covers 3.4 m in that time.
+ * Played this much faster (and faster again at a run) the feet slip far less. Drawing only:
+ * the action logic never reads the clip.
+ */
+const CADENCE = 1.28;
+/** The eyes go to a foe this near while nothing is aimed at (m). */
+const WATCH_RANGE = 9;
+const CALM = new Set<HeroState>(['idle', 'run', 'guard']);
 const wrap = (a: number) => Math.atan2(Math.sin(a), Math.cos(a));
 /** Trail colours: light cuts pale, the strong cut vermilion, the counter gold. */
 const TRAIL_COLOR: Partial<Record<HeroState, number>> = { atk1: 0xe8e2d4, atk2: 0xe8e2d4, atk3: 0xe8e2d4, strong: 0xff3c18, counter: 0xffc040 };
@@ -57,6 +67,8 @@ export class HeroActor {
   private soft: Mark | null = null;
   readonly trail: SwordTrail;
   private readonly ghosts: Afterimages;
+  /** Lean, breath and gaze laid over the clips (drawing only). */
+  private readonly motion: BodyMotion;
   /** The trail and the dodge's afterimages, in world space: add to the scene. */
   readonly effects = new THREE.Group();
 
@@ -67,6 +79,7 @@ export class HeroActor {
     this.root.traverse((o) => (o.castShadow = false));
     this.anim = new Animator(this.root, SAMURAI_CLIPS, ONCE);
     this.anim.play('idle');
+    this.motion = new BodyMotion(this.model.rig);
     this.trail = new SwordTrail(this.model.blade);
     this.ghosts = new Afterimages(this.root);
     this.effects.add(this.trail.mesh, this.ghosts.group);
@@ -102,6 +115,7 @@ export class HeroActor {
    */
   update(inp: InputManager, camYaw: number, solid: SolidFn, target: Mark | null, frozen = false, auto: AutoInput | null = null, near: readonly Mark[] = []): HeroInput {
     const m = frozen ? { x: 0, y: 0 } : inp.move();
+    const x0 = this.x, z0 = this.z, yaw0 = this.yaw;
     let mag = Math.min(1, Math.hypot(m.x, m.y));
     const steer = !frozen && mag < 0.1 && auto && (auto.dx || auto.dz) ? auto : null;
     if (steer) mag = 1;
@@ -148,7 +162,7 @@ export class HeroActor {
     }
     this.fatigue.tick(speed <= 0 ? 'rest' : legs > 1 ? 'run' : 'walk');
     // the stride keeps time with the legs, and runs in reverse while backing away from a mark
-    this.anim.speed('run', (speed > 0 && ahead < -0.3 ? -1 : 1) * legs);
+    this.anim.speed('run', (speed > 0 && ahead < -0.3 ? -1 : 1) * CADENCE * Math.sqrt(legs) * (0.75 + 0.25 * Math.min(1, mag)));
     let l = mc.lunge * dt;
     // a blow's lunge stops at the body it is aimed at instead of running through it
     if (l > 0 && aim && BLOWS.has(mc.state)) l = Math.min(l, Math.max(0, Math.hypot(aim.x - this.x, aim.z - this.z) - aim.spec.radius - this.radius - 0.15));
@@ -160,9 +174,20 @@ export class HeroActor {
     collide(p, this.radius, solid);
     this.x = p.x;
     this.z = p.z;
+    this.motion.begin();
     this.anim.update(dt);
     this.root.position.set(this.x, 0, this.z);
     this.root.rotation.y = this.yaw;
+    // carriage and hanging armour, over the pose the clips just gave (after the logic: they change nothing it reads)
+    const watched = aim ?? (CALM.has(mc.state) ? this.nearestWithin(near, WATCH_RANGE) : null);
+    this.motion.update(dt, {
+      speed: Math.hypot(this.x - x0, this.z - z0) / dt,
+      yawRate: wrap(this.yaw - yaw0) / dt,
+      look: this.bearing(watched),
+      tired: this.fatigue.level,
+      ease: mc.state === 'die' ? 0 : CALM.has(mc.state) ? 1 : 0.3,
+    });
+    this.model.secondary?.update(this.root, dt);
     // the edge flares while the blade is live
     this.glow = mc.attack ? 1 : Math.max(0, this.glow - dt * 6);
     this.model.mats.edge.emissiveIntensity = this.glow * 3;
@@ -207,6 +232,23 @@ export class HeroActor {
       if (!f.alive) continue;
       const d = Math.hypot(f.x - this.x, f.z - this.z) - f.spec.radius;
       if (d < bd && Math.abs(wrap(Math.atan2(f.x - this.x, f.z - this.z) - dir)) <= SOFT_ANGLE) (bd = d), (best = f);
+    }
+    return best;
+  }
+
+  /** Where `m` lies relative to the facing (rad, positive to the left); null for nothing, or for something behind the shoulders. */
+  private bearing(m: Mark | null): number | null {
+    if (!m) return null;
+    const a = wrap(Math.atan2(m.x - this.x, m.z - this.z) - this.yaw);
+    return Math.abs(a) > 1.9 ? null : a;
+  }
+
+  /** The nearest live foe within `range` metres, whichever way it lies. */
+  private nearestWithin(near: readonly Mark[], range: number): Mark | null {
+    let best: Mark | null = null, bd = range;
+    for (const f of near) {
+      const d = Math.hypot(f.x - this.x, f.z - this.z);
+      if (f.alive && d < bd) (bd = d), (best = f);
     }
     return best;
   }

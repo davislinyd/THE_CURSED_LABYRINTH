@@ -218,7 +218,10 @@ export class Rotroot {
   }
 
   dispose(): void {
+    // each arm's skeleton keeps its joints' matrices in a texture of its own
+    this.root.traverse((o) => (o as THREE.SkinnedMesh).skeleton?.dispose());
     this.skin.dispose();
+    this.light.dispose();
   }
 
   /** Start an action; `arm` picks the root-arm that slams or sweeps (0, 1 front; 2, 3 sides). */

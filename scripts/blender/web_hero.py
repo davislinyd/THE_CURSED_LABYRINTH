@@ -45,6 +45,22 @@ for s, side in (('L', 1), ('R', -1)):
     J['foot' + s] = (side * .10, HIP - .91, 0)
 
 
+# Hanging parts that swing on their own (the game hangs each from its parent joint and
+# moves it with a spring: src/actors/Secondary.ts): name -> (parent joint, pivot at rest)
+SUBS = {
+    'shikoro': ('head', (0, 1.596, -.005)),
+    'sodeL': ('shoulderL', (.2, 1.405, 0)), 'sodeR': ('shoulderR', (-.2, 1.405, 0)),
+    'saya': ('hips', (.2, 1.035, .1)),
+    'sash': ('spine', (.062, 1.02, .135)),
+    'tassel': ('chest', (0, 1.305, -.154)),
+}
+KUSAZURI = (27, -27, 80, -80, 131, -131, 180)
+for i, a in enumerate(KUSAZURI):
+    SUBS['kusazuri%d' % i] = ('hips', (math.sin(math.radians(a)) * .166, .995, math.cos(math.radians(a)) * .166 * .86))
+for name, (_, pivot) in SUBS.items():
+    J[name] = pivot
+
+
 def B(p):
     """Game space -> Blender (z up, -y forward); the glTF exporter's y-up turn brings it back."""
     return Vector((p[0], -p[2], p[1]))
@@ -249,12 +265,16 @@ class Kit:
                 if len(e.link_faces) == 2 and e.calc_face_angle(0) > math.radians(40):
                     e.smooth = False
             tris += sum(len(f.verts) - 2 for f in bm.faces)
-            mesh = bpy.data.meshes.new('part_' + bone)
+            # a hanging part is named after its parent joint and sits at its pivot, relative to that joint
+            name = 'sub_%s__%s' % (bone, SUBS[bone][0]) if bone in SUBS else 'part_' + bone
+            mesh = bpy.data.meshes.new(name)
             bm.to_mesh(mesh)
             bm.free()
             for m in mats:
                 mesh.materials.append(m)
-            obj = bpy.data.objects.new('part_' + bone, mesh)
+            obj = bpy.data.objects.new(name, mesh)
+            if bone in SUBS:
+                obj.location = B(Vector(J[bone]) - Vector(J[SUBS[bone][0]]))
             coll.objects.link(obj)
             objs.append((bone, obj))
         return coll, objs, tris
@@ -279,8 +299,8 @@ def build():
     k.shell('head', 'lacquer', HC, [(.134, .008), (.156, -.006), (.176, -.026)], -62, 62, 16, sz=1.12, thick=.006)
     k.tube('head', 'gold', [(math.sin(math.radians(a)) * .177, 1.60 - .026, -.005 + math.cos(math.radians(a)) * .177 * 1.12) for a in range(-62, 63, 12)], [.0035] * 11, sides=5)
     # shikoro: four lames round the nape, flaring out
-    k.lames('head', 'laced', HC, 4, .139, .03, -.004, .037, 58, 302, seg=28, sz=1.1, grow=.021)
-    k.shell('head', 'gold', HC, [(.236, -.148), (.24, -.153), (.236, -.158)], 58, 302, 28, sz=1.1, thick=.004)
+    k.lames('shikoro', 'laced', HC, 4, .139, .03, -.004, .037, 58, 302, seg=28, sz=1.1, grow=.021)
+    k.shell('shikoro', 'gold', HC, [(.236, -.148), (.24, -.153), (.236, -.158)], 58, 302, 28, sz=1.1, thick=.004)
     for s in (1, -1):
         # fukigaeshi: the lames' ends turned back, with a gilt boss
         k.solid('head', 'laced', 'box', (s * .142, 1.578, .086), (.012, .062, .07), (0, s * .95, 0), bevel=.005)
@@ -325,25 +345,26 @@ def build():
     # agemaki: the tasselled bow on the back plate
     for s in (1, -1):
         k.tube('chest', 'sash', [(0, 1.31, -.152), (s * .05, 1.342, -.16), (s * .086, 1.312, -.16), (s * .05, 1.284, -.16), (0, 1.31, -.152)], [.008] * 5, sides=6)
-        k.tube('chest', 'sash', [(s * .006, 1.305, -.154), (s * .022, 1.22, -.158), (s * .03, 1.14, -.15)], [.007, .007, .012], sides=6)
+        k.tube('tassel', 'sash', [(s * .006, 1.305, -.154), (s * .022, 1.22, -.158), (s * .03, 1.14, -.15)], [.007, .007, .012], sides=6)
     k.solid('chest', 'sash', 'ball', (0, 1.31, -.156), (.03, .03, .02))
     # belly under the cuirass, and the sash with its knot
     k.shell('spine', 'cloth', (0, 1.01, 0), [(.158, .1), (.158, 0), (.15, -.07)], seg=24, sz=.77, thick=0)
     k.shell('spine', 'sash', (0, 1.035, 0), [(.164, .038), (.173, .022), (.174, -.022), (.164, -.038)], seg=28, sz=.78, thick=.008)
     k.solid('spine', 'sash', 'ball', (.062, 1.035, .128), (.056, .05, .04))
-    k.sheet('spine', 'sash', [[(.04 + i * .022, 1.03 - j * .075, .14 + .006 * math.sin(i * 2 + j) + j * .004) for i in range(3)] for j in range(4)])
+    k.sheet('sash', 'sash', [[(.04 + i * .022, 1.03 - j * .075, .14 + .006 * math.sin(i * 2 + j) + j * .004) for i in range(3)] for j in range(4)])
 
     # ---------------------------------------------------------------- hips: skirt of tassets, scabbard
     k.shell('hips', 'cloth', (0, .95, 0), [(.152, .07), (.158, 0), (.152, -.08), (.128, -.17)], seg=24, sz=.82, thick=0)
-    for a in (27, -27, 80, -80, 131, -131, 180):
-        k.lames('hips', 'laced', (0, .95, 0), 3, .166, .022, .04, .056, a - 21, a + 21, seg=8, sz=.86, grow=.017)
-        k.shell('hips', 'gold', (0, .95, 0), [(.221, -.122), (.225, -.128), (.221, -.134)], a - 21, a + 21, 8, sz=.86, thick=.004)
+    for i, a in enumerate(KUSAZURI):
+        tasset = 'kusazuri%d' % i
+        k.lames(tasset, 'laced', (0, .95, 0), 3, .166, .022, .04, .056, a - 21, a + 21, seg=8, sz=.86, grow=.017)
+        k.shell(tasset, 'gold', (0, .95, 0), [(.221, -.122), (.225, -.128), (.221, -.134)], a - 21, a + 21, 8, sz=.86, thick=.004)
     # saya: mouth at the front, tail behind, a gentle sori
-    k.tube('hips', 'lacquer', [(.19, 1.066, .23), (.2, .99, .02), (.208, .9, -.23), (.214, .8, -.47)], [.021, .021, .02, .017], sides=12, flat=.72)
-    k.shell('hips', 'gold', (0, 0, 0), [(.0235, .012), (.025, 0), (.0235, -.012)], seg=12, thick=.004, M=Matrix.Translation(Vector((.191, 1.058, .21))) @ Euler((1.2, 0, 0), 'XYZ').to_matrix().to_4x4())
-    k.solid('hips', 'gold', 'ball', (.214, .797, -.478), (.036, .04, .05), (1.2, 0, 0))
-    k.solid('hips', 'gold', 'ball', (.212, 1.012, .09), (.018, .02, .03))
-    k.tube('hips', 'sash', [(.212, 1.012, .09), (.186, 1.03, .1), (.17, 1.038, .06), (.19, 1.0, .02), (.214, .99, .03)], [.005] * 5, sides=5)
+    k.tube('saya', 'lacquer', [(.19, 1.066, .23), (.2, .99, .02), (.208, .9, -.23), (.214, .8, -.47)], [.021, .021, .02, .017], sides=12, flat=.72)
+    k.shell('saya', 'gold', (0, 0, 0), [(.0235, .012), (.025, 0), (.0235, -.012)], seg=12, thick=.004, M=Matrix.Translation(Vector((.191, 1.058, .21))) @ Euler((1.2, 0, 0), 'XYZ').to_matrix().to_4x4())
+    k.solid('saya', 'gold', 'ball', (.214, .797, -.478), (.036, .04, .05), (1.2, 0, 0))
+    k.solid('saya', 'gold', 'ball', (.212, 1.012, .09), (.018, .02, .03))
+    k.tube('saya', 'sash', [(.212, 1.012, .09), (.186, 1.03, .1), (.17, 1.038, .06), (.19, 1.0, .02), (.214, .99, .03)], [.005] * 5, sides=5)
 
     for s, side in (('L', 1), ('R', -1)):
         ax = side * .19
@@ -351,9 +372,9 @@ def build():
         k.solid('arm' + s, 'cloth', 'ball', (ax, 1.345, 0), (.135, .115, .135))
         k.tube('arm' + s, 'cloth', [(ax, 1.36, 0), (ax, 1.2, 0), (ax, 1.04, 0)], [.064, .062, .052], sides=14)
         SC = (side * .152, 0, 0)
-        k.lames('arm' + s, 'laced', SC, 5, .1, .012, 1.39, .05, 90 * side - 54, 90 * side + 54, seg=14, grow=.005, belly=.008)
-        k.shell('arm' + s, 'gold', SC, [(.096, 1.418), (.104, 1.408), (.096, 1.396)], 90 * side - 54, 90 * side + 54, 14, thick=.005)
-        k.shell('arm' + s, 'gold', SC, [(.134, 1.144), (.137, 1.138), (.134, 1.132)], 90 * side - 54, 90 * side + 54, 14, thick=.004)
+        k.lames('sode' + s, 'laced', SC, 5, .1, .012, 1.39, .05, 90 * side - 54, 90 * side + 54, seg=14, grow=.005, belly=.008)
+        k.shell('sode' + s, 'gold', SC, [(.096, 1.418), (.104, 1.408), (.096, 1.396)], 90 * side - 54, 90 * side + 54, 14, thick=.005)
+        k.shell('sode' + s, 'gold', SC, [(.134, 1.144), (.137, 1.138), (.134, 1.132)], 90 * side - 54, 90 * side + 54, 14, thick=.004)
         # kote: mail sleeve with splints, an elbow cop, a gilt wrist band
         k.tube('forearm' + s, 'lacedDark', [(ax, 1.07, 0), (ax, .93, 0), (ax, .8, 0)], [.054, .051, .041], sides=14)
         k.solid('forearm' + s, 'lacquer', 'ball', (ax, 1.05, -.03), (.1, .1, .086))
