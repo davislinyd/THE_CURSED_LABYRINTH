@@ -10,7 +10,7 @@ settings:
     DEVELOPMENT_TEAM: N964GDJY6A
     CODE_SIGN_STYLE: Automatic
     MARKETING_VERSION: '1.0'
-    CURRENT_PROJECT_VERSION: '16'
+    CURRENT_PROJECT_VERSION: '24'
     TARGETED_DEVICE_FAMILY: '1'
     SWIFT_STRICT_CONCURRENCY: complete
 targets:
@@ -20,6 +20,7 @@ targets:
     sources:
       - Sources
       - Resources/Assets.xcassets
+      - Resources/PrivacyInfo.xcprivacy
       - path: Resources/Shaders
         type: folder
       - path: Resources/Generated
@@ -35,6 +36,7 @@ targets:
         UISupportedInterfaceOrientations: [UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
         UIApplicationSupportsIndirectInputEvents: true
         UIRequiresFullScreen: true
+        ITSAppUsesNonExemptEncryption: false
         UIAppFonts: [Generated/Fonts/cinzel.ttf, Generated/Fonts/noto-serif-tc.ttf]
     settings:
       base:

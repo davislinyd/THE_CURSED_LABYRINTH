@@ -21,6 +21,15 @@ struct NativeGameSurface:UIViewRepresentable {
         Task { @MainActor in await session.renderer.prepare();session.artReady=session.renderer.ready;session.revision+=1 }
         return view
     }
-    func updateUIView(_ view:ARView,context:Context){}
-    @MainActor final class Coordinator {var subscription:Cancellable?}
+    func updateUIView(_ view:ARView,context:Context){
+        // Only resize when the thermal/power tier changes; SwiftUI overlays remain native resolution.
+        let volcanic=session.world?.grid.area == .boss
+        if context.coordinator.volcanic != volcanic {
+            context.coordinator.volcanic=volcanic
+            view.environment.background = .color(volcanic ? UIColor(red:0.12,green:0.035,blue:0.02,alpha:1):UIColor(red:0.035,green:0.045,blue:0.065,alpha:1))
+        }
+        let scale=CGFloat(session.effectiveQuality.renderScale)
+        if view.contentScaleFactor != scale {view.contentScaleFactor=scale}
+    }
+    @MainActor final class Coordinator {var subscription:Cancellable?;var volcanic=false}
 }

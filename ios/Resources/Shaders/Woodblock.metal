@@ -19,7 +19,7 @@ kernel void woodblock(texture2d<float,access::sample> source [[texture(0)]],
     float du=abs(viewPosition(uv-float2(0,px.y),depth.sample(s,uv-float2(0,px.y)),u).z);
     float dd=abs(viewPosition(uv+float2(0,px.y),depth.sample(s,uv+float2(0,px.y)),u).z);
     float edge=smoothstep(0.16,0.5,(abs(dl+dr-2*dc)+abs(du+dd-2*dc))/(u.parameters.z>0.5 ? max(dc*0.06,0.4):1));
-    c=mix(c,float3(0.026,0.022,0.028),edge*0.65);
+    c=mix(c,float3(0.026,0.022,0.028),edge*(u.world.z<0.5 ? 0.25:0.52));
     if(u.parameters.w<0.5){
         float3 halo=(source.sample(s,uv+float2(px.x*3,0)).rgb+source.sample(s,uv-float2(px.x*3,0)).rgb+source.sample(s,uv+float2(0,px.y*3)).rgb+source.sample(s,uv-float2(0,px.y*3)).rgb)*0.25;
         c+=max(float3(0),halo-0.65)*0.15;
@@ -27,19 +27,22 @@ kernel void woodblock(texture2d<float,access::sample> source [[texture(0)]],
     float luminance=dot(c,float3(0.299,0.587,0.114)),red=clamp((c.r-max(c.g,c.b))*3,0.0,1.0);
     c=mix(float3(luminance),c,mix(0.75,1.0,red));
     c*=mix(float3(0.84,0.93,1.12),float3(1.08,1,0.86),smoothstep(0.1,0.8,luminance));
-    float paper=inkNoise(uv*size*0.7)*0.65+inkNoise(uv*size*float2(0.3,0.02))*0.35;
-    c*=1+(paper-0.5)*0.09;
+    float paper=u.parameters.w>0.5 ? 0.5:inkNoise(uv*size*0.7)*0.65+inkNoise(uv*size*float2(0.3,0.02))*0.35;
+    c*=1+(paper-0.5)*(u.world.z<0.5 ? 0.025:0.055);
     c=c*0.98+float3(0.012,0.010,0.009);
     float2 d=uv-0.5;float vignette=dot(d,d)*1.25;
     c*=1-vignette*0.42;
     if(u.world.z>0.5){
         float3 view=viewPosition(uv,depth.sample(s,uv),u),world=(u.camera*float4(view,1)).xyz;
         float explored=fog.sample(s,world.xz/u.world.xy).r;
-        float drift=inkNoise(world.xz*0.45+u.parameters.x*float2(0.025,-0.018));
+        float drift=u.parameters.w>0.5 ? 0.5:inkNoise(world.xz*0.45+u.parameters.x*float2(0.025,-0.018));
         float hidden=(1-smoothstep(0.18,0.85,explored))*(1-smoothstep(2.4,6.5,world.y));
         c=mix(c,float3(0.035,0.042,0.058)*(0.8+drift*0.5),hidden*0.94);
     }
-    if(u.parameters.z>0.5){float mist=1-exp(-max(0.0,dc-6)*0.018);c=mix(c,float3(0.025,0.03,0.042),min(0.65,mist));}
+    // Distance haze preserves nearby ground readability; village tension is zero.
+    float atmosphere=(1-exp(-max(0.0,dc-8)*0.012))*u.world.w;
+    c=mix(c,u.world.z<0.5 ? float3(0.13,0.055,0.025):float3(0.09,0.115,0.15),min(0.22,atmosphere));
+    if(u.parameters.z>0.5){bool volcanic=u.world.z<0.5;float mist=1-exp(-max(0.0,dc-6)*(volcanic?0.009:0.018));c=mix(c,volcanic?float3(0.10,0.035,0.015):float3(0.025,0.03,0.042),min(volcanic?0.38:0.65,mist));}
     c=mix(c,c*float3(1.4,0.45,0.35),u.parameters.y*clamp(vignette*3,0.0,1.0));
     target.write(float4(max(float3(0),c),1),gid);
 }

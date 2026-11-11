@@ -65,7 +65,15 @@ struct Content: Decodable, Sendable {
     }
 }
 
+enum GraphicsQuality:String,Codable,CaseIterable,Sendable {
+    case performance, balanced, high
+    var renderScale:Float {self == .performance ? 1.5:self == .high ? 2.5:2}
+    var shadowDistance:Float {self == .performance ? 0:self == .high ? 30:24}
+    var particleBudget:Int {self == .performance ? 30:self == .high ? 90:60}
+}
 struct Preferences: Codable, Sendable {
+    // Optional decoding keeps settings written before quality profiles compatible.
+    var quality:GraphicsQuality? = .balanced
     var language = Locale.preferredLanguages.first?.hasPrefix("zh") == true ? "zh" : "en"
     var music: Float = 0.65
     var sound: Float = 0.8

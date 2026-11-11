@@ -11,6 +11,8 @@ globalThis.self=globalThis;
 globalThis.createImageBitmap=async blob=>loadImage(Buffer.from(await blob.arrayBuffer()));
 globalThis.ProgressEvent=class{constructor(type,values){Object.assign(this,{type},values);}};
 const destination=path.join(root,'ios/Resources/Generated/Art'),out=path.join(root,'ios/build',`art-staging-${process.pid}`);fs.mkdirSync(out,{recursive:true});
+const bossOnly=process.argv.includes("--boss-only");
+if(bossOnly){if(!fs.existsSync(destination))throw new Error("--boss-only requires a complete existing Art directory");fs.cpSync(destination,out,{recursive:true});}
 function publish(){
   if(fs.existsSync(destination))fs.renameSync(destination,path.join(root,'ios/build',`art-backup-${Date.now()}`));
   fs.renameSync(out,destination);
@@ -125,22 +127,29 @@ function procedural(pack,make,states){
     result[name]={duration,loop:name==='idle'||name==='move',tracks};
   }return result;
 }
+let pack;
+if(!bossOnly){
 const {buildSamurai,SAMURAI_CLIPS}=source('./actors/Samurai');
 const {BUILD_ENEMY,ENEMY_CLIPS}=source('./actors/Enemies');
-let pack=new Pack('hero'),hero=buildSamurai();hero.blade.name='katana_blade';pack.tree(hero.rig.root);pack.write(clips(pack,hero.rig.root,SAMURAI_CLIPS));
+let hero=buildSamurai();pack=new Pack('hero');hero.blade.name='katana_blade';pack.tree(hero.rig.root);pack.write(clips(pack,hero.rig.root,SAMURAI_CLIPS));
 for(const kind of ['ghoul','hopper','wisp','crow']){
   const model=BUILD_ENEMY[kind]();model.update(0);pack=new Pack(kind);pack.tree(model.root);
   pack.write(ENEMY_CLIPS[kind]?clips(pack,model.root,ENEMY_CLIPS[kind]):procedural(pack,BUILD_ENEMY[kind],{idle:2,move:1.4,attack:kind==='crow'?1.4:1.2,hurt:0.35,stagger:1,die:1.2}));
 }
+}
 // Blender bosses use rigid bone children, matching the native transform tracks.
-for(const name of ['rotroot','rotroot_wraith']){
-  const bytes=fs.readFileSync(path.join(root,'scripts/blender/export',name+'.glb'));
+for(const name of ['rotroot','rotroot_wraith','scene_boss']){
+  const bytes=fs.readFileSync(path.join(root,'ios/ArtSource/export',name+'.glb'));
   const model=await new GLTFLoader().parseAsync(bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength),'');
   model.scene.traverse(bakeVertexColor);
   // Native PNG textures use the opposite V origin to glTF's atlas UVs.
   model.scene.traverse(object=>{if(object.isMesh)for(const material of Array.isArray(object.material)?object.material:[object.material])if(material.map)material.map.flipY=true;});
   pack=new Pack(name);pack.tree(model.scene);
   pack.write(clips(pack,model.scene,Object.fromEntries(model.animations.map(clip=>[clip.name,clip]))));
+}
+if(bossOnly){
+  fs.writeFileSync(path.join(out,'scene_boss-scene.json'),JSON.stringify({lanterns:[{position:[16,2.8,29],color:0xff6320},{position:[32,2.8,29],color:0xff6320}]}));
+  publish();process.exit(0);
 }
 const {VillagerModel}=source('./actors/Villager');
 for(const look of ['elder','girl','smith','merchant','keeper']){const model=new VillagerModel(look);pack=new Pack('npc_'+look);pack.tree(model.root);pack.write();}
@@ -244,14 +253,7 @@ for(const[name,rows,theme,buildings]of [['world',worldRows(),'field',[]],['villa
 const {Dungeon}=source('./world/DungeonMap'),{DUNGEONS}=source('./data/levels/dungeons'),{buildLevel}=source('./world/Level3D');
 const dungeon=new Dungeon(DUNGEONS.d1,{get:()=>false}),level=await buildLevel(dungeon,'grotto',assets);
 await staticScene('scene_dungeon',level.group,{lanterns:level.lanterns.map(l=>({position:l.pos.toArray(),color:l.color}))});
-// Preserve the authored circular grotto arena, with its uneven enclosing rock face.
-const arena=new THREE.Group(),floorMaterial=await assets.material('rocky_trail',1,{color:0x8a8478}),wallMaterial=await assets.material('rock_wall_02',1,{color:0x9a948a,side:THREE.BackSide});
-const floorGeometry=new THREE.CircleGeometry(12,48).rotateX(-Math.PI/2).translate(24,0,24);
-for(let i=0;i<floorGeometry.attributes.uv.count;i++)floorGeometry.attributes.uv.setXY(i,floorGeometry.attributes.uv.getX(i)*6,floorGeometry.attributes.uv.getY(i)*6);
-arena.add(new THREE.Mesh(floorGeometry,floorMaterial));
-const wallGeometry=new THREE.CylinderGeometry(11.8,12.2,9,64,8,true),wp=wallGeometry.attributes.position;
-for(let i=0;i<wp.count;i++){const x=wp.getX(i),y=wp.getY(i),z=wp.getZ(i),a=Math.atan2(x,z),k=1+0.06*Math.sin(a*7+y)+0.04*Math.sin(a*17-y*2);wp.setXYZ(i,x*k+24,y+4.5,z*k+24);wallGeometry.attributes.uv.setXY(i,wallGeometry.attributes.uv.getX(i)*18,wallGeometry.attributes.uv.getY(i)*3);}
-wallGeometry.computeVertexNormals();arena.add(new THREE.Mesh(wallGeometry,wallMaterial));
-await staticScene('scene_boss',arena,{lanterns:[0,1,2,3].map(i=>({position:[24+Math.sin(i*Math.PI/2+Math.PI/4)*10,2.5,24+Math.cos(i*Math.PI/2+Math.PI/4)*10],color:0x9a6aff}))});
+// The iOS-only Blender crater has already been exported alongside the colossus.
+fs.writeFileSync(path.join(out,'scene_boss-scene.json'),JSON.stringify({lanterns:[{position:[16,2.8,29],color:0xff6320},{position:[32,2.8,29],color:0xff6320}]}));
 publish();
 console.log('Original artwork exported without changing web sources.');

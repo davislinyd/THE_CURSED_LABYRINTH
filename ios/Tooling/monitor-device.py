@@ -7,6 +7,8 @@ p=argparse.ArgumentParser()
 p.add_argument('--device',required=True)
 p.add_argument('--build',required=True)
 p.add_argument('--seconds',type=float,default=1200)
+p.add_argument('--store',choices=['Journey','UITestJourney','DeveloperJourney'],default='Journey')
+p.add_argument('--stop-at-serious',action='store_true')
 args=p.parse_args()
 root=Path(__file__).resolve().parents[1]
 out=root/'build'/f'soak-{args.build}'
@@ -23,7 +25,7 @@ def command(*extra):
     return subprocess.run(['xcrun','devicectl',*extra],capture_output=True,text=True,timeout=25)
 while time.monotonic()-started<args.seconds+300:
     sample=out/'latest.json'
-    response=command('device','copy','from','--device',args.device,'--domain-type','appDataContainer','--domain-identifier','com.davislinyd.thecursedlabyrinth','--source','Library/Application Support/Journey/metrics.json','--destination',str(sample))
+    response=command('device','copy','from','--device',args.device,'--domain-type','appDataContainer','--domain-identifier','com.davislinyd.thecursedlabyrinth','--source',f'Library/Application Support/{args.store}/metrics.json','--destination',str(sample))
     if response.returncode:
         failures+=1
         if failures>=3:result['failure']='Three consecutive device-copy failures';break
@@ -46,6 +48,8 @@ while time.monotonic()-started<args.seconds+300:
         command('device','capture','screenshot','--device',args.device,'--destination',str(out/f'{stamp:04}-{data["area"]}.png'))
         previous_area=data['area'];previous_completions=summary['completions']
         print(json.dumps(summary),flush=True)
+    if args.stop_at_serious and data.get('thermalState',0)>=2:
+        result['failure']='Stopped at serious thermal state';result['metrics']=data;break
     if elapsed>=args.seconds:
         result['passed']=not data.get('assetFailures') and data.get('woodblockShader') is True and summary['completions']>0
         result['metrics']=data

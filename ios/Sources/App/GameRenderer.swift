@@ -13,6 +13,7 @@ import simd
     private var library:NativeArtLibrary!
     private var player:NativeActor!
     private var actors:[String:NativeActor]=[:]
+    private var colossus:NativeColossus?
     private var villagers:[(NativeActor,Point)]=[]
     private var chunks:[(Entity,SIMD3<Float>,Float)]=[]
     private var cutaways:[(Entity,BoundingBox)]=[]
@@ -33,7 +34,17 @@ import simd
     private var footstep:Float=0
     private var visualTick=0
     private var reduced=false
+    private var shadowDistance:Float = -1
+    private var lightingArea:Area?
+    private var lightingPhase = -1
+    private var lightingTension = -1
     private var fogCount = -1
+    private var dangerModels:[Int:ModelComponent]=[:]
+    private var dangerShape:Int?
+    private let sparkMeshes=[MeshResource.generateSphere(radius:0.055),MeshResource.generateSphere(radius:0.025)]
+    private var sparkMaterials:[UIColor:UnlitMaterial]=[:]
+    private var bossStepDistance:Float=0
+    private var lastBossPosition:Point?
     private(set) var ready=false
     private(set) var assetFailures:[String]=[]
     var loadedBossArt:String? {actors["boss:rotroot"]?.file.name}
@@ -73,9 +84,9 @@ import simd
     private func rebuild(_ world:GameWorld) {
         let g=world.grid
         if area != g.area {
-            area=g.area;scenery.children.removeAll();actors.values.forEach{$0.root.removeFromParent()};actors.removeAll();villagers.removeAll()
+            area=g.area;colossus=nil;scenery.children.removeAll();actors.values.forEach{$0.root.removeFromParent()};actors.removeAll();villagers.removeAll()
             shots.values.forEach{$0.removeFromParent()};shots.removeAll();particles.forEach{$0.entity.removeFromParent()};particles=[]
-            chunks=[];cutaways=[];fittings=[:];trailPoints=[];fogCount = -1
+            chunks=[];cutaways=[];fittings=[:];trailPoints=[];fogCount = -1;bossStepDistance=0;lastBossPosition=nil
             do {
                 let sceneName="scene_"+g.area.rawValue
                 let scene=try library.scene(sceneName)
@@ -94,7 +105,7 @@ import simd
                 if g.area == .dungeon {try dungeonFittings(world)}
                 if g.area.thirdPerson {
                     camera.components.remove(OrthographicCameraComponent.self)
-                    camera.components.set(PerspectiveCameraComponent(near:0.08,far:95,fieldOfViewInDegrees:61))
+                    camera.components.set(PerspectiveCameraComponent(near:0.08,far:g.area == .boss ? 260:95,fieldOfViewInDegrees:g.area == .boss ? 80:61))
                     cameraPosition=thirdPersonCameraPosition(world,at:world.save.position)
                 }else{
                     camera.components.remove(PerspectiveCameraComponent.self)
@@ -147,32 +158,36 @@ import simd
         let p=world.save.position,third=world.save.area.thirdPerson
         let moved=p.distance(lastHero);lastHero=p
         let running=moved>0.08
-        player.root.position=[p.x,0,p.z];player.root.orientation=simd_quatf(angle:world.save.yaw,axis:[0,1,0])
+        let playerPosition=SIMD3<Float>(p.x,0,p.z),playerYaw=simd_quatf(angle:world.save.yaw,axis:[0,1,0])
+        if player.root.position != playerPosition {player.root.position=playerPosition}
+        if player.root.orientation.vector != playerYaw.vector {player.root.orientation=playerYaw}
         let renderDelta:Float=world.playing || world.panel == .death || world.panel == .complete ? delta:0
         player.animate(world.hero.state,tick:world.hero.tick,delta:renderDelta,speed:running ? 1.4:1)
         footstep+=moved
         if footstep>1.8 && world.hero.state=="run"{footstep=0;world.event(third ? "step_dirt":"step_grass")}
         for enemy in world.enemies {
             let near=enemy.position.distance(p)<32
+            if enemy.kind=="rotroot" && enemy.alive {
+                if let previous=lastBossPosition {bossStepDistance+=min(0.3,previous.distance(enemy.position))}
+                lastBossPosition=enemy.position
+                if bossStepDistance>1.4 {bossStepDistance=0;world.event("boss_step",enemy.position)}
+            }
             let art=enemy.kind=="rotroot" ? world.save.difficulty.bossArt:enemy.kind
             if actors[enemy.id]==nil && near {do {let actor=try library.instance(art);characters.addChild(actor.root);actors[enemy.id]=actor}catch{assetFailures.append(art)}}
             guard let actor=actors[enemy.id]else{continue}
-            actor.root.position=[enemy.position.x,0,enemy.position.z];actor.root.orientation=simd_quatf(angle:enemy.yaw,axis:[0,1,0])
             actor.root.isEnabled=near && (enemy.alive || enemy.tick<90)
-            var state=enemy.kind=="rotroot" && enemy.state=="attack" ? (enemy.attackKind==0 ? "slam":"sweep"):enemy.state=="chase" ? "move":enemy.state
-            let walking=enemy.kind=="rotroot" && (enemy.state=="chase" || enemy.state=="idle")
-            var pivoting=false
-            if walking {
-                let forward=enemy.velocity.x*sin(enemy.yaw)+enemy.velocity.z*cos(enemy.yaw)
-                let side=enemy.velocity.x*cos(enemy.yaw)-enemy.velocity.z*sin(enemy.yaw)
-                let turn=wrapped(atan2(p.x-enemy.position.x,p.z-enemy.position.z)-enemy.yaw)
-                if enemy.velocity.length<0.15 && abs(turn)>0.2 {state=turn>0 ? "strafe_right":"strafe_left";pivoting=true}
-                else if abs(side)>abs(forward)*1.3 {state=side>0 ? "strafe_right":"strafe_left"}
-                else if forward < -0.1 {state="move_back"}
+            guard actor.root.isEnabled else{continue}
+            let position=SIMD3<Float>(enemy.position.x,0,enemy.position.z),yaw=simd_quatf(angle:enemy.yaw,axis:[0,1,0])
+            if enemy.kind != "rotroot" {
+                if actor.root.position != position {actor.root.position=position}
+                if actor.root.orientation.vector != yaw.vector {actor.root.orientation=yaw}
             }
-            let locomotion=state.hasPrefix("move")||state.hasPrefix("strafe")
-            let pace:Float=walking && locomotion ? (pivoting ? 0.8:clamp(enemy.velocity.length/1.8,0.3,1.4)):1
-            actor.animate(state,tick:enemy.tick,delta:renderDelta,speed:pace)
+            let state=enemy.kind=="rotroot" ? (enemy.state=="attack" ? enemy.attackClip:enemy.state=="chase" ? "idle":enemy.state):enemy.state=="chase" ? "move":enemy.state
+            actor.animate(state,tick:enemy.tick,delta:renderDelta)
+            if enemy.kind=="rotroot" {
+                if colossus==nil {colossus=NativeColossus(actor)}
+                colossus?.update(enemy,delta:renderDelta)
+            }
             if !enemy.alive {actor.root.components.set(OpacityComponent(opacity:clamp(1-Float(max(0,enemy.tick-35))/45,0,1)))}
         }
         let ids=Set(world.enemies.map(\.id));for id in Array(actors.keys)where !ids.contains(id){actors.removeValue(forKey:id)?.root.removeFromParent()}
@@ -193,6 +208,7 @@ import simd
                 burst(event.position,color:world.hero.state=="counter" ? .systemYellow:.init(red:0.8,green:0.45,blue:0.2,alpha:1),count:lowPower ? 4:9);kick=0.08;shake=0.08
             case "parry":burst(p,color:.init(red:1,green:0.83,blue:0.4,alpha:1),count:lowPower ? 8:18);kick=0.2;shake=0.12
             case "hurt":player.flash();shake=0.2;ink.impact=0.55
+            case "boss_phase":burst(event.position,color:.systemRed,count:lowPower ? 6:14);shake=0.12
             case "slam":burst(event.position,color:.init(red:0.6,green:0.46,blue:0.31,alpha:1),count:lowPower ? 8:20);shake=0.25
             case "soul":burst(event.position,color:.init(red:0.8,green:0.12,blue:0.08,alpha:1),count:5)
             default:break
@@ -210,15 +226,19 @@ import simd
         if let mark{targetRing.position=[mark.position.x,0.08,mark.position.z];targetRing.scale = .init(repeating:mark.kind=="rotroot" ? 2.5:1)}
         danger.isEnabled=false
         if let attack=world.enemies.first(where:{$0.kind=="rotroot" && $0.warning}){
-            let radius:Float=attack.attackKind==0 ? 7:5.5,arc:Float=attack.attackKind==0 ? 0.45:2.6
-            if let mesh=try? sector(radius:radius,angle:arc){danger.model=ModelComponent(mesh:mesh,materials:[glow(.init(red:0.67,green:0.15,blue:0.08,alpha:1),opacity:0.25+Float(attack.tick)/170)])}
+            if dangerModels[attack.attackKind]==nil,let mesh=try? sector(radius:attack.attackReach,angle:attack.attackArc) {
+                dangerModels[attack.attackKind]=ModelComponent(mesh:mesh,materials:[glow(attack.attackKind==2 ? .init(red:0.85,green:0.48,blue:0.12,alpha:1):attack.attackKind==3 ? .init(red:0.7,green:0.12,blue:0.3,alpha:1):.init(red:0.67,green:0.15,blue:0.08,alpha:1))])
+            }
+            if dangerShape != attack.attackKind {danger.model=dangerModels[attack.attackKind];dangerShape=attack.attackKind}
+            danger.components.set(OpacityComponent(opacity:0.25+Float(attack.tick)/170))
             danger.position=[attack.position.x,0.06,attack.position.z];danger.orientation=simd_quatf(angle:attack.yaw,axis:[0,1,0]);danger.isEnabled=true
         }
         if visualTick%12==0{
-            for(chunk,center,size)in chunks{chunk.isEnabled=size>60 || simd_distance(SIMD3(p.x,0,p.z),SIMD3(center.x,0,center.z))<38+size/2}
+            for(chunk,center,size)in chunks{chunk.isEnabled=size>60 || simd_distance(SIMD3(p.x,0,p.z),SIMD3(center.x,0,center.z))<(third ? 38:24)+size/2}
             for(entity,bounds)in cutaways{
                 let h=SIMD3(p.x,1,p.z),c=cameraPosition,axis=simd_normalize(c-h),offset=bounds.center-h,t=simd_dot(offset,axis),distance=simd_length(offset-axis*t)
-                entity.components.set(OpacityComponent(opacity:t>0 && t<30 && distance<max(2,bounds.extents.x*0.45) ? 0.22:1))
+                let opacity:Float=t>0 && t<30 && distance<max(2,bounds.extents.x*0.45) ? 0.22:1
+                if entity.components[OpacityComponent.self]?.opacity != opacity {entity.components.set(OpacityComponent(opacity:opacity))}
             }
             updateLights(p,third:third)
             for(key,entity)in fittings where key.hasPrefix("fake:"){
@@ -231,29 +251,49 @@ import simd
         if third{
             let yaw=world.cameraYaw
             desired=thirdPersonCameraPosition(world,at:p)
-            target=[p.x+sin(yaw)*1.1,1.3,p.z+cos(yaw)*1.1]
+            if world.grid.area == .boss {
+                target=[p.x*0.65+24*0.35,6.5+world.cameraPitch*2,p.z-10]
+            }else{target=[p.x+sin(yaw)*1.1,1.3,p.z+cos(yaw)*1.1]}
         }else{desired=[p.x+14,19,p.z+14];target=[p.x,0.25,p.z]}
         cameraPosition+=(desired-cameraPosition)*min(1,delta*(third ? 12:9))
-        if third {
+        if third && world.grid.area != .boss {
             let offset=Point(x:cameraPosition.x-p.x,z:cameraPosition.z-p.z),clearance=world.grid.cameraClearance(from:p,direction:offset,maximum:offset.length,flags:world.save.flags)
             if clearance<offset.length-0.2 {let safe=p+offset.normalized*clearance;cameraPosition.x=safe.x;cameraPosition.z=safe.z;cameraPosition.y=max(cameraPosition.y,3.4)}
         }
         let vibration=SIMD3(sin(time*87)*shake,sin(time*113)*shake*0.65,cos(time*79)*shake)*0.25
         camera.look(at:target,from:cameraPosition+vibration,relativeTo:nil)
-        heroLight.position=[p.x,2.2,p.z];heroLight.light.intensity=third ? (world.save.keyItems.contains("candle") ? 550:250):80
-        moon.light.intensity=third ? 1050:3600;fill.light.intensity=third ? 430:1100
-        if reduced != lowPower{reduced=lowPower;moon.shadow=lowPower ? nil:DirectionalLightComponent.Shadow(maximumDistance:24,depthBias:1.5)}
+        let lightPosition=SIMD3<Float>(p.x,2.2,p.z),heroIntensity:Float=third ? (world.save.keyItems.contains("candle") ? 550:250):80
+        if heroLight.position != lightPosition {heroLight.position=lightPosition}
+        if heroLight.light.intensity != heroIntensity {heroLight.light.intensity=heroIntensity}
+        let phase=world.boss?.phase ?? 1,tension=Int(world.tension.level*20)
+        if lightingArea != world.save.area || lightingPhase != phase || lightingTension != tension {
+            lightingArea=world.save.area;lightingPhase=phase;lightingTension=tension
+            let atmosphere=AtmosphereProfile.forArea(world.grid.area)
+            moon.light.intensity=atmosphere.moon
+            fill.light.intensity=atmosphere.fill*(1-Float(tension)/20*0.12)
+            let rage=Float(phase-1)*0.18
+            fill.light.color=world.grid.area == .boss ? UIColor(red:1,green:CGFloat(0.5-rage*0.4),blue:0.24,alpha:1):world.save.area == .village ? UIColor(red:0.9,green:0.77,blue:0.6,alpha:1):UIColor(red:CGFloat(0.7+rage),green:CGFloat(0.72-rage),blue:CGFloat(0.85-rage),alpha:1)
+        }
+        let quality=session?.effectiveQuality ?? .balanced
+        if reduced != lowPower || shadowDistance != quality.shadowDistance {
+            reduced=lowPower;shadowDistance=quality.shadowDistance
+            moon.shadow=lowPower ? nil:DirectionalLightComponent.Shadow(maximumDistance:shadowDistance,depthBias:1.5)
+        }
         kick*=0.8;shake=max(0,shake-delta)
-        ink.update(camera:camera.transform.matrix,thirdPerson:third,reduced:lowPower,time:time)
+        ink.update(camera:camera.transform.matrix,thirdPerson:third,reduced:lowPower,time:time,tension:world.tension.level)
     }
     private func thirdPersonCameraPosition(_ world:GameWorld,at p:Point)->SIMD3<Float> {
-        let yaw=world.cameraYaw,offset=Point(x:-sin(yaw),z:-cos(yaw));var distance=world.grid.cameraClearance(from:p,direction:offset,maximum:4.2,flags:world.save.flags)
+        if world.grid.area == .boss {return [p.x-sin(world.cameraYaw)*6.8,2.8+world.cameraPitch*0.5,p.z-cos(world.cameraYaw)*6.8]}
+        let bossFraming=false
+        let maximum:Float=4.2
+        let yaw=world.cameraYaw,offset=Point(x:-sin(yaw),z:-cos(yaw));var distance=world.grid.cameraClearance(from:p,direction:offset,maximum:maximum,flags:world.save.flags)
         while distance>0.3 {
             let behind=p+offset*(distance+0.3),outsideArena=world.save.area == .boss && behind.distance(Point(x:24,z:24))>10.5
             if !outsideArena && world.grid.visible(p,behind,flags:world.save.flags){break};distance-=0.2
         }
         let elevated:Float=distance<3 ? (3-distance)*0.35:0
-        return [p.x+offset.x*distance,1.8+distance*sin(world.cameraPitch)+elevated,p.z+offset.z*distance]
+        let height:Float=bossFraming ? 9+distance*sin(world.cameraPitch)+max(0,maximum-distance)*0.9:1.8+distance*sin(world.cameraPitch)+elevated
+        return [p.x+offset.x*distance,height,p.z+offset.z*distance]
     }
     private func updateLights(_ p:Point,third:Bool){
         let anchors=lampAnchors.sorted{Point(x:$0.position[0],z:$0.position[2]).distance(p)<Point(x:$1.position[0],z:$1.position[2]).distance(p)}
@@ -265,10 +305,11 @@ import simd
         }
     }
     private func burst(_ position:Point,color:UIColor,count:Int){
-        let available=min(count,max(0,90-particles.count))
+        let available=min(count,max(0,(session?.effectiveQuality.particleBudget ?? 60)-particles.count))
         for i in 0..<available{
             let angle=Float(i)*2.399+time*11,speed=Float(i%4+1)*0.6
-            let entity=ModelEntity(mesh:.generateSphere(radius:i%3==0 ? 0.055:0.025),materials:[glow(color)])
+            if sparkMaterials[color]==nil {sparkMaterials[color]=glow(color)}
+            let entity=ModelEntity(mesh:sparkMeshes[i%3==0 ? 0:1],materials:[sparkMaterials[color]!])
             entity.position=[position.x,1+Float(i%3)*0.15,position.z];effects.addChild(entity)
             particles.append(Particle(entity:entity,velocity:[sin(angle)*speed,0.7+Float(i%3)*0.3,cos(angle)*speed],remaining:0.3+Float(i%4)*0.1,total:0.6))
         }
