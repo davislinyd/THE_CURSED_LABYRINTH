@@ -1,7 +1,10 @@
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
+import { Animator } from '../src/actors/Animator';
 import { BodyMotion, Carriage } from '../src/actors/BodyMotion';
+import { FootPlant, stride } from '../src/actors/FootPlant';
 import { BONES, buildRig } from '../src/actors/Rig';
+import { SAMURAI_CLIPS } from '../src/actors/Samurai';
 import { Dangle, DangleSpec, Secondary } from '../src/actors/Secondary';
 
 const DT = 1 / 60;
@@ -148,5 +151,183 @@ describe('carriage', () => {
     expect(blow[59].hips).toBeGreaterThan(0.03);
     expect(blow[179].hips).toBeLessThan(1e-4);
     expect(blow[179].head).toBeLessThan(1e-4);
+  });
+});
+
+describe('feet on the ground', () => {
+  const STRIDE = stride(SAMURAI_CLIPS.run);
+  const LEG = ['thighL', 'shinL', 'footL', 'thighR', 'shinR', 'footR'] as const;
+  /** Ankle height standing straight (see buildRig). */
+  const GROUND = 0.04;
+  const contactAt = (k: number, time: number) => STRIDE.contact[k][Math.floor(time * 60 + 1e-6) % STRIDE.contact[k].length];
+
+  interface Tick {
+    /** Ankles (world) and how much each foot of the clip bears weight. */
+    feet: { at: THREE.Vector3; up: number; c: number }[];
+    legs: THREE.Quaternion[];
+    hips: number;
+  }
+  /**
+   * The hero's stride as HeroActor plays it: idle or run per tick (`go`, m/s ahead), the clip
+   * kept to the ground speed, the body turning at `yawRate` (rad/s) and sliding to its left at
+   * `side` (m/s, as along a wall); with or without the feet laid on.
+   */
+  const walk = (go: (t: number) => number, ticks: number, plant: boolean, yawRate: (t: number) => number = () => 0, side = 0) => {
+    const rig = buildRig(), anim = new Animator(rig.root, { idle: SAMURAI_CLIPS.idle, run: SAMURAI_CLIPS.run }), feet = new FootPlant(rig, STRIDE);
+    anim.play('idle');
+    let x = 0, z = 0, yaw = 0;
+    const out: Tick[] = [];
+    for (let t = 0; t < ticks; t++) {
+      const v = go(t);
+      anim.play(v > 0 ? 'run' : 'idle', 0.2);
+      anim.speed('run', Math.min(2, Math.max(0.6, v / STRIDE.speed)));
+      yaw += yawRate(t) * DT;
+      x += (Math.sin(yaw) * v + Math.cos(yaw) * side) * DT;
+      z += (Math.cos(yaw) * v - Math.sin(yaw) * side) * DT;
+      feet.begin();
+      anim.update(DT);
+      rig.root.position.set(x, 0, z);
+      rig.root.rotation.y = yaw;
+      if (plant) feet.update(DT, anim.weight('run'), anim.time('run'));
+      rig.root.updateMatrixWorld(true);
+      out.push({
+        feet: (['footL', 'footR'] as const).map((f, k) => ({
+          at: rig.bones[f].getWorldPosition(new THREE.Vector3()),
+          up: new THREE.Vector3(0, 1, 0).applyQuaternion(rig.bones[f].getWorldQuaternion(new THREE.Quaternion())).y,
+          c: anim.weight('run') * contactAt(k, anim.time('run')),
+        })),
+        legs: LEG.map((b) => rig.bones[b].quaternion.clone()),
+        hips: rig.bones.hips.position.y,
+      });
+    }
+    return out;
+  };
+  /**
+   * The largest turn of a thigh or shin from one tick to the next; the largest by which one
+   * tick's turn stands out from the ticks either side (a twitch); the largest rise or fall of the hips.
+   */
+  const steps = (log: Tick[], from = 2) => {
+    let leg = 0, twitch = 0, hips = 0;
+    const turn = (i: number, j: number) => log[i].legs[j].angleTo(log[i - 1].legs[j]);
+    for (let i = Math.max(2, from); i < log.length - 1; i++) {
+      for (const j of [0, 1, 3, 4]) {
+        leg = Math.max(leg, turn(i, j));
+        twitch = Math.max(twitch, turn(i, j) - (turn(i - 1, j) + turn(i + 1, j)) / 2);
+      }
+      hips = Math.max(hips, Math.abs(log[i].hips - log[i - 1].hips));
+    }
+    return { leg, twitch, hips };
+  };
+  /** The same rotation, to rounding (angleTo is too coarse near zero for the mixer's single-precision values). */
+  const same = (a: THREE.Quaternion, b: THREE.Quaternion) => Math.max(...a.toArray().map((v, i) => Math.abs(v - b.toArray()[i]))) < 1e-9;
+  /** Over the ticks a foot fully bears weight: how far it slides a tick, and how high and how level it stands. */
+  const stance = (log: Tick[], from = 60) => {
+    let slide = 0, low = Infinity, high = -Infinity, level = 1, n = 0;
+    for (let i = from; i < log.length; i++)
+      for (let k = 0; k < 2; k++) {
+        const f = log[i].feet[k], g = log[i - 1].feet[k];
+        if (f.c < 0.99 || g.c < 0.99) continue;
+        n++;
+        slide = Math.max(slide, Math.hypot(f.at.x - g.at.x, f.at.z - g.at.z));
+        low = Math.min(low, f.at.y);
+        high = Math.max(high, f.at.y);
+        level = Math.min(level, f.up);
+      }
+    return { slide, low, high, level, n };
+  };
+
+  it('learns from the stride clip the ground speed it fits and when each foot bears weight', () => {
+    expect(STRIDE.speed).toBeGreaterThan(3.5);
+    expect(STRIDE.speed).toBeLessThan(4.5);
+    for (const c of STRIDE.contact) {
+      expect(Math.max(...c)).toBeGreaterThan(0.99);
+      const down = c.filter((v) => v > 0.5).length / c.length;
+      expect(down).toBeGreaterThan(0.25);
+      expect(down).toBeLessThan(0.5);
+    }
+    // a run: never both feet down at once
+    for (let i = 0; i < STRIDE.contact[0].length; i++) expect(Math.min(STRIDE.contact[0][i], STRIDE.contact[1][i])).toBeLessThan(0.5);
+  });
+
+  it('holds a foot where it came down, flat on the ground, where the clip alone lets it slide and hover', () => {
+    for (const v of [3, 5, 7.5]) {
+      const clip = stance(walk(() => v, 240, false)), held = stance(walk(() => v, 240, true));
+      expect(held.n).toBeGreaterThan(20);
+      expect(clip.slide, `${v} m/s`).toBeGreaterThan(0.01);
+      expect(held.slide, `${v} m/s`).toBeLessThan(0.002);
+      expect(clip.low).toBeGreaterThan(GROUND + 0.03);
+      expect(held.low).toBeGreaterThan(GROUND - 0.005);
+      expect(held.high).toBeLessThan(GROUND + 0.012);
+      expect(held.level).toBeGreaterThan(0.995);
+    }
+  });
+
+  it('keeps the knee bent and moves no joint much faster than the clip does, nor in a twitch', () => {
+    for (const v of [3, 5, 7.5]) {
+      const log = walk(() => v, 240, true), clip = steps(walk(() => v, 240, false), 60), held = steps(log, 60);
+      expect(held.leg, `${v} m/s`).toBeLessThan(clip.leg * 1.2);
+      expect(held.twitch, `${v} m/s`).toBeLessThan(0.1);
+      expect(held.hips, `${v} m/s`).toBeLessThan(0.02);
+      for (let i = 60; i < log.length; i++)
+        for (let k = 0; k < 2; k++) if (log[i].feet[k].c > 0.99) expect(log[i].legs[k * 3 + 1].angleTo(new THREE.Quaternion())).toBeGreaterThan(0.35);
+    }
+  });
+
+  it('sets off, stops and turns without a jump, and is gone once the body stands', () => {
+    const go = (t: number) => (t >= 30 && t < 150 ? 5 : 0), turn = (t: number) => (t >= 90 && t < 99 ? 20 : 0);
+    const held = walk(go, 240, true, turn), clip = walk(go, 240, false, turn);
+    expect(steps(held).leg).toBeLessThan(steps(clip).leg * 1.2);
+    expect(steps(held).twitch).toBeLessThan(0.1);
+    expect(steps(held).hips).toBeLessThan(0.02);
+    // a second after stopping the run has faded out and the clips alone pose the legs
+    for (let j = 0; j < LEG.length; j++) expect(same(held[239].legs[j], clip[239].legs[j])).toBe(true);
+    expect(held[239].hips).toBeCloseTo(clip[239].hips, 6);
+  });
+
+  it('holds the feet only against the travel the stride covers: sliding sideways, they go with the body', () => {
+    const log = walk(() => 4, 240, true, () => 0, 1.5);
+    let n = 0;
+    for (let i = 60; i < log.length; i++)
+      for (let k = 0; k < 2; k++) {
+        const f = log[i].feet[k], g = log[i - 1].feet[k];
+        if (f.c < 0.99 || g.c < 0.99) continue;
+        n++;
+        expect(Math.abs(f.at.z - g.at.z)).toBeLessThan(0.002); // held against the stride
+        expect(Math.abs(f.at.x - g.at.x - 1.5 * DT)).toBeLessThan(0.002); // carried along sideways, the leg not splayed
+      }
+    expect(n).toBeGreaterThan(20);
+  });
+
+  it('comes off again before the clips pose the next tick', () => {
+    const rig = buildRig(), mixer = new THREE.AnimationMixer(rig.root), act = mixer.clipAction(SAMURAI_CLIPS.run).play(), feet = new FootPlant(rig, STRIDE);
+    let posed: THREE.Quaternion[] = [], hips = 0;
+    for (let t = 0; t < 30; t++) {
+      feet.begin();
+      mixer.update(DT);
+      rig.root.position.z += 5 * DT;
+      posed = LEG.map((b) => rig.bones[b].quaternion.clone());
+      hips = rig.bones.hips.position.y;
+      feet.update(DT, 1, act.time);
+    }
+    expect(rig.bones.hips.position.y).not.toBeCloseTo(hips, 4);
+    feet.begin();
+    LEG.forEach((b, j) => expect(same(rig.bones[b].quaternion, posed[j])).toBe(true));
+    expect(rig.bones.hips.position.y).toBe(hips);
+  });
+
+  it('lets go of the ground when the body is put somewhere else', () => {
+    const rig = buildRig(), mixer = new THREE.AnimationMixer(rig.root), act = mixer.clipAction(SAMURAI_CLIPS.run).play(), feet = new FootPlant(rig, STRIDE);
+    const ankle = () => rig.root.worldToLocal(rig.bones.footL.getWorldPosition(new THREE.Vector3()));
+    let clipAnkle = new THREE.Vector3();
+    for (let t = 0; t < 60; t++) {
+      feet.begin();
+      mixer.update(DT);
+      rig.root.position.z = t < 40 ? t * 0.08 : 500 + t * 0.08;
+      rig.root.updateMatrixWorld(true);
+      if (t === 40) clipAnkle = ankle();
+      feet.update(DT, 1, act.time);
+      // the tick it lands, the foot is where the clip has it, only pressed down and the hips let down
+      if (t === 40) expect(Math.hypot(ankle().x - clipAnkle.x, ankle().z - clipAnkle.z)).toBeLessThan(0.02);
+    }
   });
 });

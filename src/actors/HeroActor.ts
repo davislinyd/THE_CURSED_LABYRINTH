@@ -7,6 +7,7 @@ import { P2, SolidFn, collide } from '../world/Grid3D';
 import { SwordTrail } from '../world/SwordTrail';
 import { Animator } from './Animator';
 import { BodyMotion } from './BodyMotion';
+import { FootPlant, stride } from './FootPlant';
 import { SAMURAI_CLIPS, SamuraiClip, SamuraiModel, buildSamurai } from './Samurai';
 
 /** Metres per second at a walk (running and trudging scale it: see Fatigue). */
@@ -23,12 +24,14 @@ const SOFT_ANGLE = (70 * Math.PI) / 180;
 const RECOVER_TURN = 4;
 /** Crossfade (seconds) between standing and walking: the sword comes down to the carry or up to the guard. */
 const STRIDE_FADE = 0.2;
+/** What the stride clip does with its feet: when each bears weight, and the ground speed it fits. */
+const STRIDE = stride(SAMURAI_CLIPS.run);
 /**
- * The stride clip covers about 2 m of ground in its 0.68 s; a walk covers 3.4 m in that time.
- * Played this much faster (and faster again at a run) the feet slip far less. Drawing only:
- * the action logic never reads the clip.
+ * The stride clip plays at the speed that keeps its feet from slipping on the ground the body
+ * covers, within these bounds (it keeps stepping, slowly, while the body wheels about on the
+ * spot or is held up by a wall). Drawing only: the action logic never reads the clip.
  */
-const CADENCE = 1.28;
+const CADENCE = [0.25, 2] as const;
 /** The eyes go to a foe this near while nothing is aimed at (m). */
 const WATCH_RANGE = 9;
 const CALM = new Set<HeroState>(['idle', 'run', 'guard']);
@@ -69,6 +72,8 @@ export class HeroActor {
   private readonly ghosts: Afterimages;
   /** Lean, breath and gaze laid over the clips (drawing only). */
   private readonly motion: BodyMotion;
+  /** Feet that stay where they come down (drawing only). */
+  private readonly feet: FootPlant;
   /** The trail and the dodge's afterimages, in world space: add to the scene. */
   readonly effects = new THREE.Group();
 
@@ -80,6 +85,7 @@ export class HeroActor {
     this.anim = new Animator(this.root, SAMURAI_CLIPS, ONCE);
     this.anim.play('idle');
     this.motion = new BodyMotion(this.model.rig);
+    this.feet = new FootPlant(this.model.rig, STRIDE);
     this.trail = new SwordTrail(this.model.blade);
     this.ghosts = new Afterimages(this.root);
     this.effects.add(this.trail.mesh, this.ghosts.group);
@@ -161,8 +167,6 @@ export class HeroActor {
       this.z += dz * speed * dt;
     }
     this.fatigue.tick(speed <= 0 ? 'rest' : legs > 1 ? 'run' : 'walk');
-    // the stride keeps time with the legs, and runs in reverse while backing away from a mark
-    this.anim.speed('run', (speed > 0 && ahead < -0.3 ? -1 : 1) * CADENCE * Math.sqrt(legs) * (0.75 + 0.25 * Math.min(1, mag)));
     let l = mc.lunge * dt;
     // a blow's lunge stops at the body it is aimed at instead of running through it
     if (l > 0 && aim && BLOWS.has(mc.state)) l = Math.min(l, Math.max(0, Math.hypot(aim.x - this.x, aim.z - this.z) - aim.spec.radius - this.radius - 0.15));
@@ -174,6 +178,11 @@ export class HeroActor {
     collide(p, this.radius, solid);
     this.x = p.x;
     this.z = p.z;
+    // the stride keeps time with the ground actually covered ahead or back (a wall stops it, sliding along one is no stride),
+    // and runs in reverse while backing away from a mark
+    const covered = Math.hypot(this.x - x0, this.z - z0) / dt, strode = Math.abs((this.x - x0) * this.fx + (this.z - z0) * this.fz) / dt;
+    this.anim.speed('run', (speed > 0 && ahead < -0.3 ? -1 : 1) * Math.min(CADENCE[1], Math.max(CADENCE[0], strode / STRIDE.speed)));
+    this.feet.begin();
     this.motion.begin();
     this.anim.update(dt);
     this.root.position.set(this.x, 0, this.z);
@@ -181,12 +190,13 @@ export class HeroActor {
     // carriage and hanging armour, over the pose the clips just gave (after the logic: they change nothing it reads)
     const watched = aim ?? (CALM.has(mc.state) ? this.nearestWithin(near, WATCH_RANGE) : null);
     this.motion.update(dt, {
-      speed: Math.hypot(this.x - x0, this.z - z0) / dt,
+      speed: covered,
       yawRate: wrap(this.yaw - yaw0) / dt,
       look: this.bearing(watched),
       tired: this.fatigue.level,
       ease: mc.state === 'die' ? 0 : CALM.has(mc.state) ? 1 : 0.3,
     });
+    this.feet.update(dt, this.anim.weight('run'), this.anim.time('run'));
     this.model.secondary?.update(this.root, dt);
     // the edge flares while the blade is live
     this.glow = mc.attack ? 1 : Math.max(0, this.glow - dt * 6);
