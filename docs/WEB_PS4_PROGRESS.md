@@ -2,7 +2,7 @@
 
 新的工作階段先讀本檔即可接續，不必重讀聊天紀錄。
 
-- Repository：`davislinyd/THE_CURSED_LABYRINTH`　Branch：`feature/web-ps4-upgrade`（由 `main` 42f8a27 分出，不自動 Push、未合併）
+- Repository：`davislinyd/THE_CURSED_LABYRINTH`　Branch：`feature/web-ps4-upgrade`（由 `main` 42f8a27 分出；2026-11-12 依使用者指示以 `--no-ff` 合併回 `main`，尚未 push）
 - 目標：桌面網頁版（Chrome／Edge，WebGL2）由 PS2 風格提升到接近 PS4 世代，保留水墨木版畫；不動 `ios/`、不改戰鬥數值／判定／AI／存檔格式。
 - **使用者於 2026-11-11 的最新指示（優先於原任務書）**：不要著重 4K 畫質，要著重**人物的可動性與流暢度**；可參考並複用 iOS 版的 3D 建模（唯讀，複製成 Web 專用資產）。
 
@@ -142,7 +142,7 @@ After 另測：CPU update 約 0.35 ms、render 提交約 2.5 ms。平原各 Prof
 ## 下一個優先執行的具體工作
 
 1. 請使用者用 `http://localhost:5173/?bench=boss&perf`（或實際操作，按 C 切換跑步）目視驗收跑姿，重點是腳是否踩實、骨盆高度、離地的膝蓋動作。若嫌跑姿太低，調 `FootPlant.ts` 的 `EASY`（0.92；越大骨盆越高、膝蓋越直）。
-2. 驗收通過後，依「topic branch → `--no-ff` 合併 main」流程合併 `feature/web-ps4-upgrade` 與 `feature/ios-cinematic-combat-upgrade`。兩邊的 `README.md` 開發歷程都在檔尾追加，合併時會有一處文字衝突，需手動保留兩段。
+2. ~~合併~~：2026-11-12 已依使用者指示將 `feature/web-ps4-upgrade` 與 `feature/ios-cinematic-combat-upgrade` 以 `--no-ff` 合併回 `main`（README 開發歷程的衝突已手動保留兩段）。合併時跑姿尚未經真人目視驗收，第 1 項仍待辦。
 3. 之後再進行「尚未完成」第 1 項的其餘部分。
 
 ## Blender 注意事項
