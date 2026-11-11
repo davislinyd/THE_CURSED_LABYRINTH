@@ -156,4 +156,4 @@ tests/          Vitest
 
 - Boss 節奏（`BossRhythm`）：突進斬、二段連擊，65%／30% 血量切換階段；跨門檻時立即標記，不打斷當前招式。張力導演（`TensionDirector`）控制環境聲、區域補光與距離霧；畫質分 Performance／Balanced／High，高溫或低電量強制 Performance。
 - Boss 重製為約 55.8 m 的半身腐神（每型態約 16.5 萬三角面），以 Blender 雕塑，原始檔與腳本放在 `ios/ArtSource/`。巨手以雙節肢體解算追隨實際接觸點；掌背封印在前搖結束後才能斬擊（`ColossusPose`）。場地改為開放熔岩祭壇，鏡頭改為仰視。
-- 驗證：18 組核心測試（含三種難度整章）與 build 21 四項實機 UI 案例通過；build 24 本機建置、17 份資產／59 組動畫驗證與 Boss 核心測試通過，已用 USB 備援安裝至 iPhone 15 Pro。build 22 長測 43.63 FPS，效能未達標；build 24 的實機外觀、恐怖感與 FPS 尚待真人驗收。詳見 [iOS 進度](ios/DEVELOPMENT_PROGRESS.md)。
+- 驗證：18 組核心測試（含三種難度整章）與 build 21 四項實機 UI 案例通過；build 24 本機建置、17 份資產／59 組動畫驗證與 Boss 核心測試通過，已用 USB 備援安裝至 iPhone 15 Pro。2026-11-12 使用者將 build 24 設為驗收通過；未另行量測 build 24 的 FPS，最近一次長測仍是 build 22（43.63 FPS，未達標）。詳見 [iOS 進度](ios/DEVELOPMENT_PROGRESS.md)。

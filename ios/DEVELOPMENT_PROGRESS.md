@@ -1,6 +1,6 @@
 # iOS cinematic combat 進度
 
-- 分支：feature/ios-cinematic-combat-upgrade；起點 3cdb464。2026-11-12 提交（a2242d7）並以 --no-ff 合併回 main；尚未 push。
+- 分支：feature/ios-cinematic-combat-upgrade；起點 3cdb464。2026-11-12 提交（a2242d7）並以 --no-ff 合併回 main（295532f），main 與本分支均已 push。
 - 原有網頁及 iOS 未提交變更均保留；非 iOS 初始 SHA-256 清單：build/cinematic/non-ios-before.json。
 - Phase 1：iPhone 15 Pro／iOS 27.0.1／USB paired／Developer Mode enabled。正式 Journey 已唯讀複製至 build/cinematic/player-before。原始 11 組核心測試及三難度整章通過。
 - Phase 2：BossRhythm 集中追擊、轉向、恢復參數；突進斬、二段連擊、65%／30% 階段。保留既有動畫命中 sample；攻擊鎖定方向。第一輪 11 組核心回歸通過。
@@ -71,3 +71,8 @@
 - 正式 Journey 主檔與備份仍存在，唯讀取得雜湊及修改時間；兩檔最後修改於 2026-11-11 23:46:28，早於本次安裝。與更早測試基準不同，沒有本輪安裝前即時快照，不能聲稱雜湊前後一致。未啟動／寫入／還原存檔、解除安裝、清資料或重設。證據：`build/colossus/save-24-post-install.json`。
 - 版本慣例維持 marketing 1.0＋遞增 build；24 已備妥但先前未交付，本輪維持 24，不重新封裝、提交、push 或發佈。同步 README、VALIDATION 與本進度；本輪寫入完全位於 ios/，其他來源的 Web dirty 檔案保持原狀。
 - 本次安裝要求已完成。下一步由使用者確認恐怖感、材質及動作；新版實機視覺與 FPS 尚未驗收，不自行追加測試。既有 USB 備援環境可重用，不必重新下載依賴；build/colossus/install-usb-24.py 為本次裝置／版本專用。
+
+## 2026-11-12 build 24 驗收
+
+- 使用者將 build 24 設為驗收通過（恐怖感、材質、動作）。本項為使用者判定，未另行量測 build 24 的 FPS；最近一次長測數據仍為 build 22（43.63 FPS，未達標）。
+- 上方各段的「待驗收」為當時紀錄，build 24 部分以本段為準。iOS 分支已合併回 main（295532f）並 push；未封裝、上傳 TestFlight 或發佈。
