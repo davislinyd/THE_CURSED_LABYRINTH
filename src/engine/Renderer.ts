@@ -223,6 +223,7 @@ export class Renderer {
     canvas.addEventListener('webglcontextrestored', () => {
       // three.js rebuilds programs, textures and render targets as they are next used
       this.contextLost = false;
+      this.timer.reset();
       this.notice(null);
       this.outW = this.inW = 0;
       this.resize();

@@ -77,7 +77,7 @@ const GPU_DISJOINT = 0x8fbb;
  * (the timing was interrupted). Without the extension `supported` is false and nothing is measured.
  */
 export class GpuTimer {
-  readonly supported: boolean;
+  supported: boolean;
   private readonly gl: WebGL2RenderingContext | null;
   private pending: WebGLQuery | null = null;
   private active: WebGLQuery | null = null;
@@ -107,6 +107,10 @@ export class GpuTimer {
   poll(): number | null {
     const gl = this.gl, q = this.pending;
     if (!gl || !q) return null;
+    if (!gl.isQuery(q)) {
+      this.pending = null;
+      return null;
+    }
     if (!gl.getQueryParameter(q, gl.QUERY_RESULT_AVAILABLE)) return null;
     const disjoint = gl.getParameter(GPU_DISJOINT) as boolean;
     const ns = gl.getQueryParameter(q, gl.QUERY_RESULT) as number;
@@ -115,9 +119,10 @@ export class GpuTimer {
     return disjoint ? null : ns / 1e6;
   }
 
-  /** After a lost context the old queries are gone. */
+  /** A lost context takes its queries with it; a restored one has to be asked for the extension again. */
   reset(): void {
     this.pending = this.active = null;
+    this.supported = !!this.gl && !this.gl.isContextLost() && !!this.gl.getExtension('EXT_disjoint_timer_query_webgl2');
   }
 }
 
