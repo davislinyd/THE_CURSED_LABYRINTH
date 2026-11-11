@@ -1,6 +1,8 @@
 # iPhone 原生版驗證
 
-## 半身恐怖巨像（build 24 已實機安裝，外觀待驗收）
+## 半身恐怖巨像（build 24 已實機安裝，使用者驗收通過）
+
+- 2026-11-12 使用者將 build 24 設為驗收通過。本項為使用者判定，未另行量測 build 24 的 FPS；最近一次長測數據仍為 build 22（43.63 FPS，未達標）。
 
 - Blender MCP 與 imagegen 完成高密度半身模型／材質，普通 164,856、鬼化 165,488 triangles，各 54 nodes／6 materials；55.8 m 高。17 資產／59 動畫驗證通過，含頭部 UV coverage，見 build/colossus/art-ready.log。
 - NativeColossus／ColossusPose 對齊巨掌、掌背封印與原有命中窗口；兩項針對性核心檢查含三難度正常輸入通關通過，見 core-ready.log。Debug build 24 成功，見 build-24-ready.log。

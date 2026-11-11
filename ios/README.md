@@ -104,10 +104,10 @@ Boss 階段標記在跨越血量門檻時立即更新，但不重設目前攻擊
 
 檔案傳輸服務卡住時可用 `--diagnostics-console`：Debug 只輸出 metrics 與 Journey 主檔／備份的 SHA-256，不輸出存檔內容。`python3 Tooling/monitor-console.py --device TARGET_UDID --build BUILD --seconds 900 --stop-at-serious` 會以 UITestJourney 正常輸入巡迴、收集主控台證據並在 serious 提早停止。
 
-## 半身恐怖巨像（build 24 已實機安裝）
+## 半身恐怖巨像（build 24 已實機安裝，使用者驗收通過）
 
 Boss 改為約 55.8 m 半身腐神，普通／鬼化各 164,856／165,488 triangles、54 nodes、6 materials；頭部與巨手為體素融合／離線細分雕塑，執行時不做細分。原有約 4.4 萬面版本保留於 ArtSource/colossus.py。主要來源為 colossus_horror.py、horror_sculpt.py 與 colossus_horror.blend。焦皮貼圖由內建 imagegen 產生，位於 ArtSource/Textures/ashen-hide-v1.png，完整提示詞保存在同目錄 .prompt.txt，貼圖已封裝進 Blender 與 GLB。
 
 本體固定在火山祭壇後方，以 NativeColossus 的雙節肢體解算把巨手送到實際戰鬥接觸點；ColossusPose 共用命中時鐘，掌背封印於前搖結束後提供反擊窗口。Boss 場地改為開放熔岩火山；鏡頭改為玩家後方仰視，普通地圖與 Web 不變。
 
-build 24 本機建置、美術與針對性 Boss 核心檢查通過。2026-11-12 已透過既有 USB 配對與 streaming 安裝至 iPhone 15 Pro（iOS 27.0.1），裝置安裝資料確認為 1.0 (24)；CoreDevice 仍逾時，因此使用忽略目錄中的 pymobiledevice3 備援流程。僅安裝、查詢版本與唯讀存檔核對，未追加遊戲測試或自動啟動。新版實機外觀與 FPS 尚未驗收，不能用舊 build 22 的效能代替。
+build 24 本機建置、美術與針對性 Boss 核心檢查通過。2026-11-12 已透過既有 USB 配對與 streaming 安裝至 iPhone 15 Pro（iOS 27.0.1），裝置安裝資料確認為 1.0 (24)；CoreDevice 仍逾時，因此使用忽略目錄中的 pymobiledevice3 備援流程。僅安裝、查詢版本與唯讀存檔核對，未追加遊戲測試或自動啟動。2026-11-12 使用者將 build 24 設為驗收通過；未另行量測 build 24 的 FPS，不能用舊 build 22 的效能數據代表。

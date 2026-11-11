@@ -2,7 +2,7 @@
 
 新的工作階段先讀本檔即可接續，不必重讀聊天紀錄。
 
-- Repository：`davislinyd/THE_CURSED_LABYRINTH`　Branch：`feature/web-ps4-upgrade`（由 `main` 42f8a27 分出；2026-11-12 依使用者指示以 `--no-ff` 合併回 `main`，尚未 push）
+- Repository：`davislinyd/THE_CURSED_LABYRINTH`　Branch：`feature/web-ps4-upgrade`（由 `main` 42f8a27 分出；2026-11-12 依使用者指示以 `--no-ff` 合併回 `main`（295532f），`main` 與本分支均已 push）
 - 目標：桌面網頁版（Chrome／Edge，WebGL2）由 PS2 風格提升到接近 PS4 世代，保留水墨木版畫；不動 `ios/`、不改戰鬥數值／判定／AI／存檔格式。
 - **使用者於 2026-11-11 的最新指示（優先於原任務書）**：不要著重 4K 畫質，要著重**人物的可動性與流暢度**；可參考並複用 iOS 版的 3D 建模（唯讀，複製成 Web 專用資產）。
 
