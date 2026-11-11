@@ -2541,6 +2541,15 @@
    ],
    "tris": 2499
   },
+  "model/web_samurai": {
+   "kind": "model",
+   "source": "original",
+   "origin": "scripts/blender/export/web_samurai.glb",
+   "files": [
+    "models/web_samurai.glb"
+   ],
+   "tris": 43560
+  },
   "model/wicker_basket_01": {
    "kind": "model",
    "source": "polyhaven",

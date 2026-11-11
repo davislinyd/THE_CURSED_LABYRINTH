@@ -38,6 +38,23 @@ export function pointShadow(light: THREE.PointLight, q: QualityProfile): void {
   sh.bias = -0.003;
 }
 
+/**
+ * A soft halo at every lantern, flame and glowing thing a level lists: light in the air
+ * round the lamp, for the cost of one sprite each (only those in view are drawn).
+ */
+export function halos(lights: readonly { pos: THREE.Vector3; color: number }[], glow: THREE.Texture, size: number): { group: THREE.Group; dispose: () => void } {
+  const group = new THREE.Group(), mats = new Map<number, THREE.SpriteMaterial>();
+  for (const l of lights) {
+    let m = mats.get(l.color);
+    if (!m) mats.set(l.color, (m = new THREE.SpriteMaterial({ map: glow, color: l.color, transparent: true, opacity: 0.34, blending: THREE.AdditiveBlending, depthWrite: false })));
+    const s = new THREE.Sprite(m);
+    s.position.copy(l.pos);
+    s.scale.setScalar(size);
+    group.add(s);
+  }
+  return { group, dispose: () => mats.forEach((m) => m.dispose()) };
+}
+
 /** Show the first `q.lights` of a lantern pool (hidden lights cost no shader work). */
 export function lanternCount(pool: readonly THREE.PointLight[], q: QualityProfile): void {
   pool.forEach((l, i) => (l.visible = i < q.lights));

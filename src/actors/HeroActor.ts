@@ -61,8 +61,8 @@ export class HeroActor {
   readonly effects = new THREE.Group();
 
   /** `fatigue` is the game's, so tiredness and run mode carry from area to area. */
-  constructor(public x: number, public z: number, readonly fatigue = new Fatigue()) {
-    this.model = buildSamurai();
+  constructor(public x: number, public z: number, readonly fatigue = new Fatigue(), model: SamuraiModel = buildSamurai()) {
+    this.model = model;
     this.root = this.model.rig.root;
     this.root.traverse((o) => (o.castShadow = false));
     this.anim = new Animator(this.root, SAMURAI_CLIPS, ONCE);

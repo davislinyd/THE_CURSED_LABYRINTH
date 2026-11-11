@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 
 /** Ticks a point of the trail lasts, and its strength where it leaves the blade. */
-const LIFE = 8;
-const ALPHA = 0.7;
+const LIFE = 10;
+const ALPHA = 0.75;
 /** Ribbon points per tick of motion (Catmull-Rom between the tick samples). */
 const SUB = 4;
 const MAX_QUADS = (LIFE + 2) * SUB;
@@ -24,11 +24,19 @@ const material = () =>
   (MAT ??= new THREE.ShaderMaterial({
     vertexShader: /* glsl */ `
       attribute vec4 aColor;
+      attribute float aSide;
       varying vec4 vColor;
-      void main() { vColor = aColor; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+      varying float vSide;
+      void main() { vColor = aColor; vSide = aSide; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+    // across the ribbon (0 at the blade's root, 1 at its point): a faint wash, then a bright rim where the edge passed
     fragmentShader: /* glsl */ `
       varying vec4 vColor;
-      void main() { gl_FragColor = vColor; }`,
+      varying float vSide;
+      void main() {
+        float body = 0.1 + 0.5 * smoothstep(0.1, 0.9, vSide);
+        float rim = smoothstep(0.8, 0.97, vSide) * (1.0 - smoothstep(0.985, 1.0, vSide) * 0.5);
+        gl_FragColor = vec4(vColor.rgb * (1.0 + 2.2 * rim), vColor.a * (body + 0.9 * rim));
+      }`,
     transparent: true,
     depthWrite: false,
     blending: THREE.AdditiveBlending,
@@ -53,6 +61,7 @@ export class SwordTrail {
   private readonly free: Sample[] = [];
   private readonly pos: THREE.BufferAttribute;
   private readonly col: THREE.BufferAttribute;
+  private readonly side: THREE.BufferAttribute;
   private live = false;
   private run = 0;
   private readonly head = { root: new THREE.Vector3(), tip: new THREE.Vector3() };
@@ -63,6 +72,11 @@ export class SwordTrail {
     const g = new THREE.BufferGeometry();
     this.pos = new THREE.BufferAttribute(new Float32Array(MAX_QUADS * 6 * 3), 3);
     this.col = new THREE.BufferAttribute(new Float32Array(MAX_QUADS * 6 * 4), 4);
+    // which edge of the ribbon a vertex is on never changes: (root, tip, tip), (root, tip, root) per quad
+    const side = new Float32Array(MAX_QUADS * 6);
+    for (let i = 0; i < MAX_QUADS; i++) side.set([0, 1, 1, 0, 1, 0], i * 6);
+    this.side = new THREE.BufferAttribute(side, 1);
+    g.setAttribute('aSide', this.side);
     this.pos.setUsage(THREE.DynamicDrawUsage);
     this.col.setUsage(THREE.DynamicDrawUsage);
     g.setAttribute('position', this.pos);
@@ -142,14 +156,14 @@ export class SwordTrail {
   private quad(q: number, ca: THREE.Color, cb: THREE.Color, ageA: number, ageB: number): void {
     const [ra, ta] = this.a, [rb, tb] = this.b;
     const fa = ALPHA * Math.max(0, 1 - ageA / LIFE) ** 1.5, fb = ALPHA * Math.max(0, 1 - ageB / LIFE) ** 1.5;
-    // two triangles: (root a, tip a, tip b), (root a, tip b, root b); the root edge fades out
+    // two triangles: (root a, tip a, tip b), (root a, tip b, root b); the shader fades the root edge
     const i = q * 6;
-    this.put(i, ra, ca, fa * 0.08);
+    this.put(i, ra, ca, fa);
     this.put(i + 1, ta, ca, fa);
     this.put(i + 2, tb, cb, fb);
-    this.put(i + 3, ra, ca, fa * 0.08);
+    this.put(i + 3, ra, ca, fa);
     this.put(i + 4, tb, cb, fb);
-    this.put(i + 5, rb, cb, fb * 0.08);
+    this.put(i + 5, rb, cb, fb);
   }
 
   private put(i: number, v: THREE.Vector3, c: THREE.Color, alpha: number): void {

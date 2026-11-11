@@ -30,7 +30,9 @@ import { FOG_BLOCK, fogBlock, fogKey, liftFog } from '../world/IsoFog';
 import { IsoGrid, SUB, tileMid, tileOf, worldMid, worldRows, worldTile } from '../world/IsoMap';
 import { CUT, IsoLevel, IsoTheme, buildIsoLevel } from '../world/IsoLevel';
 import { Lantern } from '../world/Level3D';
-import { MAX_LANTERNS, lanternCount, moonShadow } from '../engine/Lighting';
+import { buildSamuraiHD } from '../actors/SamuraiHD';
+import { MAX_LANTERNS, halos, lanternCount, moonShadow } from '../engine/Lighting';
+import { RIM, rimBody } from '../engine/Shading';
 import type { QualityProfile } from '../engine/Quality';
 import { PropKit, loadPropKit } from '../world/Props';
 
@@ -128,6 +130,7 @@ export class IsoScene implements Scene {
   private heroShadow!: THREE.Mesh;
   private readonly heroLight = new THREE.PointLight(0xffd2a0, 10, 13, 1.3);
   private readonly pool: THREE.PointLight[] = [];
+  private glows: { group: THREE.Group; dispose: () => void } | null = null;
   private lanterns: Lantern[] = [];
   private readonly fx = new Fx(DRIFT.iso);
   private readonly foes: Foe[] = [];
@@ -183,10 +186,18 @@ export class IsoScene implements Scene {
   private async build(): Promise<void> {
     const g = this.game, s3 = this.scene3, grid = this.grid;
     this.kit = await loadPropKit(g.assets);
-    this.level = await buildIsoLevel(grid, THEME[this.area], g.assets, this.kit, this.area === 'village' ? HAIYA.buildings : []);
+    this.level = await buildIsoLevel(grid, THEME[this.area], g.assets, this.kit, this.area === 'village' ? HAIYA.buildings : [], g.gfx.quality);
     moonShadow(this.level.moon, g.gfx.quality);
+    // a cold, strong moon and a blue sky fill against the warm lamps; bodies get a moonlit edge
+    this.level.moon.intensity *= 1.8;
+    this.level.moon.color.setHex(0xa6bcff);
+    this.level.hemi.intensity *= 1.25;
+    this.level.hemi.color.lerp(new THREE.Color(0x3d5a9a), 0.5);
+    RIM.uRimColor.value.setRGB(0.09, 0.13, 0.26);
+    this.glows = halos(this.level.lanterns, this.kit.glow, 3.2);
+    s3.add(this.glows.group);
     s3.environment = await g.assets.environment('moonlit_golf', g.gfx.gl);
-    s3.environmentIntensity = 0.3;
+    s3.environmentIntensity = 0.3 * g.gfx.quality.env;
     s3.background = new THREE.Color(0x020306);
     s3.add(this.level.group, this.heroLight, this.fx.group);
     this.lanterns = this.level.lanterns;
@@ -225,6 +236,7 @@ export class IsoScene implements Scene {
       } else {
         for (const v of HAIYA.villagers) {
           const m = new VillagerModel(v.look);
+          rimBody(m.root);
           const x = tileMid(v.x), z = tileMid(v.y);
           m.root.position.set(x, 0, z);
           m.root.rotation.y = Math.atan2(16 * SUB - x, 12 * SUB - z);
@@ -238,7 +250,7 @@ export class IsoScene implements Scene {
         }
       }
     }
-    this.hero = new HeroActor(start.x, start.z, g.fatigue);
+    this.hero = new HeroActor(start.x, start.z, g.fatigue, await buildSamuraiHD(g.assets));
     this.hero.yaw = ISO_YAW;
     this.hero.root.traverse((o) => (o.castShadow = true));
     this.heroShadow = blobShadow(1.3);
@@ -277,6 +289,7 @@ export class IsoScene implements Scene {
     model.root.position.set(x, 0, z);
     // meshes only: a wisp carries a point light, which would render (and keep) a cube shadow map
     model.root.traverse((o) => (o.castShadow = (o as THREE.Mesh).isMesh === true));
+    rimBody(model.root);
     const sh = blobShadow(kind === 'crow' ? 0.9 : kind === 'wisp' ? 0.8 : 1.3);
     this.shadows.set(f, sh);
     this.scene3.add(model.root, sh);
@@ -880,7 +893,7 @@ export class IsoScene implements Scene {
     this.heroShadow.position.set(h.x, 0.03, h.z);
     const moon = this.level.moon;
     moon.target.position.set(h.x, 0, h.z);
-    moon.position.set(h.x - 14, 26, h.z + 8);
+    moon.position.set(h.x - 17, 23, h.z + 10);
     CUT.uHero.value.set(h.x, 1, h.z);
     CUT.uBack.value.copy(this.cam.back);
     if (this.frame % 20 === 1) {
@@ -1017,6 +1030,7 @@ export class IsoScene implements Scene {
       if (m.isMesh && m.geometry) m.geometry.dispose();
     });
     this.level?.dispose();
+    this.glows?.dispose();
     this.veil?.dispose();
     this.fx.dispose();
     this.hero?.dispose();

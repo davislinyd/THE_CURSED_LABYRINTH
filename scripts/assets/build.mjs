@@ -257,7 +257,8 @@ function glbTriangles(file) {
   return Math.round(tris);
 }
 
-const KEEP_PARTS = new Set(['treasure_chest', 'banner_torn']);
+// web_samurai: one node per joint of the rig (scripts/blender/web_hero.py)
+const KEEP_PARTS = new Set(['treasure_chest', 'banner_torn', 'web_samurai']);
 
 async function buildModel(id, budget, assets) {
   const files = await polyhaven(`files/${id}`);
@@ -335,7 +336,7 @@ function writeCredits(assets) {
     for (const [key, a] of by(kind)) if (a.source === 'polyhaven') lines.push(`| [${key.split('/')[1]}](${a.origin}) | ${kind} | ${a.author} |`);
   }
   const own = by('model').filter(([, a]) => a.source === 'original').map(([key]) => key.split('/')[1]);
-  lines.push('', `## ${SOURCES.original.title}`, '', `Modelled for this game in Blender (\`${SOURCES.original.url}/props.py\`): ${own.join(', ')}.`);
+  lines.push('', `## ${SOURCES.original.title}`, '', `Modelled for this game in Blender (\`${SOURCES.original.url}/props.py\`, \`web_hero.py\`): ${own.join(', ')}.`);
   for (const repoKey of ['vsco2ce', 'vcsl']) {
     const s = SOURCES[repoKey];
     lines.push('', `## Instrument samples — ${s.title} (${s.license})`, '', `${s.author}, ${s.url}`, '');

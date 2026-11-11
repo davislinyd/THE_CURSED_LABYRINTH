@@ -51,7 +51,7 @@ export const MODELS = {
 };
 
 /** Models built by scripts/blender/props.py (raw exports in scripts/blender/export/). */
-export const ORIGINAL_MODELS = ['sotoba', 'jizo', 'torii_fallen', 'fence_broken', 'katana_stuck', 'spear_stuck', 'arrows_stuck', 'banner_torn', 'timber_support'];
+export const ORIGINAL_MODELS = ['sotoba', 'jizo', 'torii_fallen', 'fence_broken', 'katana_stuck', 'spear_stuck', 'arrows_stuck', 'banner_torn', 'timber_support', 'web_samurai'];
 
 export const HDRIS = ['moonlit_golf'];
 

@@ -4,6 +4,9 @@ import { cyl, part } from '../actors/Build';
 import type { Building } from '../data/levels/iso';
 import type { Assets } from '../engine/Assets';
 import { cloudTexture, rng } from '../engine/ProcTex';
+import type { QualityProfile } from '../engine/Quality';
+import { surfaceDetail } from '../engine/Shading';
+import { cedars, clutter, houseTrims } from './IsoDetail';
 import { IsoGrid, SUB, tileMid } from './IsoMap';
 import { Lantern, Surface, V3, noise } from './Level3D';
 import { loadRuins, PropKit, waving } from './Props';
@@ -79,8 +82,12 @@ export interface IsoLevel {
 const key = (x: number, y: number) => `${x},${y}`;
 const DIRS: [number, number][] = [[0, -1], [1, 0], [0, 1], [-1, 0]];
 
-/** Everything static of an isometric area: ground, rock, trees, water, buildings and landmarks. */
-export async function buildIsoLevel(grid: IsoGrid, theme: IsoTheme, assets: Assets, kit: PropKit, buildings: Building[] = []): Promise<IsoLevel> {
+/**
+ * Everything static of an isometric area: ground, rock, trees, water, buildings and landmarks.
+ * With a quality profile `q` (the web game) it adds the finer dressing of IsoDetail and the
+ * material detail the profile allows; without one it builds the plain level as before.
+ */
+export async function buildIsoLevel(grid: IsoGrid, theme: IsoTheme, assets: Assets, kit: PropKit, buildings: Building[] = [], q?: QualityProfile): Promise<IsoLevel> {
   const th = THEMES[theme];
   const group = new THREE.Group();
   const lanterns: Lantern[] = [];
@@ -127,19 +134,34 @@ export async function buildIsoLevel(grid: IsoGrid, theme: IsoTheme, assets: Asse
   const gp = groundGeo.attributes.position, guv = groundGeo.attributes.uv;
   for (let i = 0; i < gp.count; i++) guv.setXY(i, gp.getX(i) / 4, gp.getZ(i) / 4);
   const groundMat = new THREE.MeshStandardMaterial({ map: groundSet.map, normalMap: groundSet.normalMap, roughnessMap: groundSet.armMap, aoMap: groundSet.armMap });
+  const fine = !!q?.detail;
+  if (q) groundMat.customProgramCacheKey = () => `iso-ground:${fine}`;
   groundMat.onBeforeCompile = (sh) => {
     sh.uniforms.uMask = { value: maskTex };
     sh.uniforms.uPath = { value: pathSet.map };
     sh.uniforms.uSize = { value: new THREE.Vector2(W, D) };
     sh.vertexShader = 'varying vec2 vGround;\n' + sh.vertexShader.replace('#include <project_vertex>', '#include <project_vertex>\nvGround = (modelMatrix * vec4(transformed, 1.0)).xz;');
-    sh.fragmentShader = 'uniform sampler2D uMask; uniform sampler2D uPath; uniform vec2 uSize; varying vec2 vGround;\n' + sh.fragmentShader.replace(
+    const NOISE = `
+      float gHash(vec2 p) { vec3 p3 = fract(vec3(p.xyx) * 0.1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
+      float gNoise(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
+        return mix(mix(gHash(i), gHash(i + vec2(1.0, 0.0)), f.x), mix(gHash(i + vec2(0.0, 1.0)), gHash(i + vec2(1.0, 1.0)), f.x), f.y); }\n`;
+    sh.fragmentShader = 'uniform sampler2D uMask; uniform sampler2D uPath; uniform vec2 uSize; varying vec2 vGround;\n' + (fine ? NOISE : '') + sh.fragmentShader.replace(
       '#include <map_fragment>',
       `vec4 gm = texture2D(uMask, vGround / uSize);
       vec4 g0 = texture2D(map, vMapUv);
       vec4 g1 = texture2D(uPath, vMapUv * 0.75);
+      ${fine ? `
+      // the same ground at a second, larger scale, mixed in by a slow field: no visible repeat
+      float gn = gNoise(vGround * 0.05) * 0.62 + gNoise(vGround * 0.19 + 9.0) * 0.38;
+      g0 = mix(g0, texture2D(map, vMapUv * 0.23 + 0.37), 0.3 + 0.35 * gn);` : ''}
       float pk = smoothstep(0.38, 0.62, gm.r + (g0.g - 0.25) * 0.6);
       vec4 sampledDiffuseColor = mix(g0, g1, pk);
       sampledDiffuseColor.rgb *= mix(1.0, 0.45, gm.g);
+      ${fine ? `
+      // lighter and darker stretches over metres; trodden, damp earth along the path's edge
+      sampledDiffuseColor.rgb *= 0.7 + 0.62 * gn;
+      float worn = smoothstep(0.12, 0.45, gm.r) * (1.0 - smoothstep(0.5, 0.9, gm.r));
+      sampledDiffuseColor.rgb *= 1.0 - 0.3 * worn;` : ''}
       diffuseColor *= sampledDiffuseColor;`,
     );
   };
@@ -183,7 +205,9 @@ export async function buildIsoLevel(grid: IsoGrid, theme: IsoTheme, assets: Asse
     });
   }
   if (depth.size) {
-    const m = new THREE.Mesh(surf.build(), cutaway(rock));
+    const rockMat = cutaway(rock);
+    if (fine) surfaceDetail(rockMat, { macro: 0.55, moss: 0.75, size: 7 });
+    const m = new THREE.Mesh(surf.build(), rockMat);
     m.castShadow = m.receiveShadow = true;
     group.add(m);
   }
@@ -191,7 +215,9 @@ export async function buildIsoLevel(grid: IsoGrid, theme: IsoTheme, assets: Asse
   // ------------------------------------------------------------ trees: instanced cedars
   const treeTiles: [number, number][] = [];
   for (let y = 0; y < grid.h; y++) for (let x = 0; x < grid.w; x++) if (grid.ch(x, y) === 'T') treeTiles.push([x, y]);
-  if (treeTiles.length) {
+  if (treeTiles.length && q) {
+    cedars(treeTiles, r, await assets.material('japanese_cedar_bark', 1, { color: 0x6a5a4a }), cutaway, group);
+  } else if (treeTiles.length) {
     const cones: THREE.BufferGeometry[] = [];
     for (let i = 0; i < 4; i++) {
       const c = new THREE.ConeGeometry(1.5 - i * 0.28, 2.6 - i * 0.25, 7);
@@ -254,7 +280,8 @@ export async function buildIsoLevel(grid: IsoGrid, theme: IsoTheme, assets: Asse
   if (waterGeo.length) {
     const nor = pathSet.normalMap.clone();
     nor.repeat.set(0.4, 0.4);
-    const water = new THREE.Mesh(mergeGeometries(waterGeo), new THREE.MeshStandardMaterial({ color: 0x0a1820, roughness: 0.12, metalness: 0.2, normalMap: nor, normalScale: new THREE.Vector2(0.6, 0.6) }));
+    // on the web's profiles the water takes more of the night sky, so the moon glints along its ripples
+    const water = new THREE.Mesh(mergeGeometries(waterGeo), new THREE.MeshStandardMaterial({ color: q ? 0x0c1c2a : 0x0a1820, roughness: q ? 0.07 : 0.12, metalness: 0.2, normalMap: nor, normalScale: new THREE.Vector2(0.6, 0.6), envMapIntensity: q ? 5 : 1 }));
     water.receiveShadow = true;
     group.add(water);
     animated.push((t) => nor.offset.set(t * 0.02, t * 0.013));
@@ -415,7 +442,7 @@ export async function buildIsoLevel(grid: IsoGrid, theme: IsoTheme, assets: Asse
 
   // ------------------------------------------------------------ buildings
   for (const b of buildings) {
-    const g = house(b, kit, plaster, b.kind === 'house' || b.kind === 'elder' ? thatch : tiles);
+    const g = house(b, kit, plaster, b.kind === 'house' || b.kind === 'elder' ? thatch : tiles, !!q);
     place(g, (b.x + b.w / 2) * SUB, (b.y + b.h / 2) * SUB);
     lanterns.push({ pos: new THREE.Vector3((b.x + b.w / 2) * SUB, 2.1, (b.y + b.h) * SUB + 0.6), color: b.kind === 'smithy' ? 0xff6a20 : 0xffa860 });
     if (b.kind === 'shop') {
@@ -438,7 +465,12 @@ export async function buildIsoLevel(grid: IsoGrid, theme: IsoTheme, assets: Asse
   moon.shadow.normalBias = 0.04;
   group.add(hemi, moon, moon.target);
 
+  // ------------------------------------------------------------ ground clutter (quality profiles only)
+  const litter = q && q.clutter > 0 ? clutter(grid, q, group) : null;
+  if (litter) animated.push(litter.update);
+
   const dispose = () => {
+    litter?.dispose();
     maskTex.dispose();
     mistTex.forEach((t) => t.dispose());
     winds.forEach((w) => w.dispose());
@@ -581,7 +613,7 @@ function mist(x: number, z: number): THREE.Mesh<THREE.BufferGeometry, THREE.Mesh
 }
 
 /** A village building: plaster and timber under a gabled roof, its door on the south side. */
-function house(b: Building, k: PropKit, plaster: THREE.Material, roofMat: THREE.Material): THREE.Group {
+function house(b: Building, k: PropKit, plaster: THREE.Material, roofMat: THREE.Material, fine = false): THREE.Group {
   const g = new THREE.Group();
   const w = b.w * SUB - 0.6, d = b.h * SUB - 0.6;
   const wallH = b.kind === 'inn' ? 3.4 : b.kind === 'kura' ? 3.2 : 2.6;
@@ -638,5 +670,6 @@ function house(b: Building, k: PropKit, plaster: THREE.Material, roofMat: THREE.
     } else m.position.set(0, wallH, s * d / 2);
     g.add(m);
   }
+  if (fine) houseTrims(g, b, k, w, d, wallH, part);
   return g;
 }

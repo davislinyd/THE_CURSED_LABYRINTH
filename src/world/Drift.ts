@@ -59,11 +59,13 @@ export class Drift {
   readonly points: THREE.Points;
   private readonly u: Record<string, THREE.IUniform>;
 
-  constructor(kind: DriftKind) {
+  /** `scale`: share of the motes to make (the quality profile's particle amount). */
+  constructor(kind: DriftKind, scale = 1) {
+    const count = Math.max(8, Math.round(kind.count * scale));
     const g = new THREE.BufferGeometry();
-    const rand = new Float32Array(kind.count * 4);
+    const rand = new Float32Array(count * 4);
     for (let i = 0; i < rand.length; i++) rand[i] = Math.random();
-    g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(kind.count * 3), 3));
+    g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(count * 3), 3));
     g.setAttribute('aRand', new THREE.BufferAttribute(rand, 4));
     this.u = {
       uCenter: { value: new THREE.Vector3() },

@@ -18,6 +18,7 @@ import { TitleScene } from '../scenes/TitleScene';
 import { PauseMenu } from '../ui/PauseMenu';
 import { COL, UI } from '../ui/UI';
 import { Fatigue } from '../combat/Fatigue';
+import { FX_QUALITY } from '../world/Fx';
 import { BENCH_IDS, BenchId, Benchmark } from './Benchmark';
 import { CheatCode } from './Cheat';
 import { Difficulty, RULES } from './Difficulty';
@@ -222,6 +223,8 @@ export class Game {
     const before = this.gfx.quality;
     this.gfx.apply(s.resolution, s.quality, s.crt);
     this.assets.anisotropy = Math.min(this.gfx.quality.anisotropy, this.gfx.gl.capabilities.getMaxAnisotropy());
+    FX_QUALITY.particles = this.gfx.quality.particles;
+    FX_QUALITY.flashLight = this.gfx.quality.id !== 'performance';
     if (this.gfx.quality !== before) this.scenes.current?.quality?.(this.gfx.quality);
     SaveManager.saveSettings(s);
     this.labelPage();
