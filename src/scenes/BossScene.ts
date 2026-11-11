@@ -8,6 +8,8 @@ import { DungeonId, ItemId, swordDamage } from '../core/GameState';
 import { Scene } from '../core/SceneManager';
 import { DUNGEONS } from '../data/levels/dungeons';
 import { FollowCam } from '../engine/FollowCam';
+import { pointShadow } from '../engine/Lighting';
+import type { QualityProfile } from '../engine/Quality';
 import { Movers } from '../engine/Interp';
 import { View } from '../engine/Renderer';
 import { t } from '../i18n';
@@ -98,13 +100,7 @@ export class BossScene implements Scene {
     s3.fog = new THREE.FogExp2(0x040506, 0.045);
     s3.environment = await g.assets.environment('moonlit_golf', g.gfx.gl);
     s3.environmentIntensity = 0.15;
-    if (g.settings.effects === 'high') {
-      this.heroLight.castShadow = true;
-      this.heroLight.shadow.mapSize.setScalar(1024);
-      this.heroLight.shadow.camera.near = 0.3;
-      this.heroLight.shadow.radius = 3;
-      this.heroLight.shadow.bias = -0.003;
-    }
+    pointShadow(this.heroLight, g.gfx.quality);
     const floor = new THREE.Mesh(new THREE.CircleGeometry(ARENA_R + 1, 48), floorMat);
     floor.rotation.x = -Math.PI / 2;
     const uv = floor.geometry.attributes.uv;
@@ -171,6 +167,10 @@ export class BossScene implements Scene {
     this.struck = false;
     if (p === 'slam' || p === 'sweep' || p === 'hurt' || p === 'stagger' || p === 'die') this.boss.play(p, arm);
     if (p === 'idle') this.boss.play('idle');
+  }
+
+  quality(q: QualityProfile): void {
+    pointShadow(this.heroLight, q);
   }
 
   /** Enter also confirms, so it must not open the pause menu over the death screen. */

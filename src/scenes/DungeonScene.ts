@@ -10,6 +10,8 @@ import { Scene } from '../core/SceneManager';
 import { ENCOUNTERS } from '../data/encounters';
 import { DUNGEONS } from '../data/levels/dungeons';
 import { FollowCam } from '../engine/FollowCam';
+import { MAX_LANTERNS, lanternCount, pointShadow } from '../engine/Lighting';
+import type { QualityProfile } from '../engine/Quality';
 import { Movers } from '../engine/Interp';
 import { VIEW, View } from '../engine/Renderer';
 import { isZh, t } from '../i18n';
@@ -28,7 +30,6 @@ import { Barrier, BarrierKind, Chest, Lever, Prop, PropKit, Spikes, Warp, bossDo
 const BARRIER_KIND: Record<string, BarrierKind> = { D: 'door', L: 'locked', B: 'breakable', S: 'seal', G: 'gate', g: 'gate', H: 'gate', h: 'gate' };
 /** Facing for each grid direction (N, E, S, W): yaw 0 looks +z (south). */
 const DIR_YAW = [Math.PI, Math.PI / 2, 0, -Math.PI / 2];
-const LIGHTS = 6;
 const ITEMS: ItemId[] = ['herb', 'elixir', 'talisman'];
 /** Strength of the environment reflection at full light. */
 const ENV = 0.18;
@@ -124,25 +125,20 @@ export class DungeonScene implements Scene {
     // a faint sky reflection on armour and steel; it fades with the light in cursed darkness
     s3.environment = await g.assets.environment('moonlit_golf', g.gfx.gl);
     s3.environmentIntensity = ENV;
-    if (g.settings.effects === 'high') {
-      // foes, chests and doors throw shadows from the light behind the hero
-      this.heroLight.castShadow = true;
-      this.heroLight.shadow.mapSize.setScalar(1024);
-      this.heroLight.shadow.camera.near = 0.3;
-      this.heroLight.shadow.radius = 3;
-      this.heroLight.shadow.bias = -0.003;
-    }
+    // foes, chests and doors throw shadows from the light behind the hero
+    pointShadow(this.heroLight, g.gfx.quality);
     s3.background = new THREE.Color(th.fog);
     s3.fog = new THREE.FogExp2(th.fog, th.fogDensity);
     this.hemi = new THREE.HemisphereLight(th.hemi[0], th.hemi[1], th.hemi[2]);
     this.hemiBase = th.hemi[2];
     s3.add(level.group, this.hemi, this.heroLight, this.fx.group);
     this.lanterns = level.lanterns;
-    for (let i = 0; i < LIGHTS; i++) {
+    for (let i = 0; i < MAX_LANTERNS; i++) {
       const l = new THREE.PointLight(0xff9a4a, 0, 10, 1.5);
       this.pool.push(l);
       s3.add(l);
     }
+    lanternCount(this.pool, g.gfx.quality);
     for (let y = 0; y < d.h; y++) for (let x = 0; x < d.w; x++) this.placeProp(x, y);
 
     const loc = g.state.location;
@@ -857,6 +853,11 @@ export class DungeonScene implements Scene {
 
   // ----------------------------------------------------------------- light
 
+  quality(q: QualityProfile): void {
+    pointShadow(this.heroLight, q);
+    lanternCount(this.pool, q);
+  }
+
   private updateLights(): void {
     const h = this.hero, s = this.game.state;
     const dark = this.d.isDark(cellOf(h.x), cellOf(h.z));
@@ -876,7 +877,7 @@ export class DungeonScene implements Scene {
         .map((l) => ({ l, d: Math.hypot(l.pos.x - h.x, l.pos.z - h.z) }))
         .filter((e) => e.d < 24 && !this.d.isDark(cellOf(e.l.pos.x), cellOf(e.l.pos.z)))
         .sort((a, b) => a.d - b.d)
-        .slice(0, LIGHTS);
+        .slice(0, MAX_LANTERNS);
       this.pool.forEach((p, i) => {
         const e = near[i];
         p.userData.on = !!e;

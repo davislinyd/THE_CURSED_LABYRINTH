@@ -1,14 +1,15 @@
 import { DIFFICULTIES, DIFFICULTY_INFO } from '../core/Difficulty';
 import type { Game } from '../core/Game';
 import { Scene } from '../core/SceneManager';
-import { RESOLUTIONS } from '../engine/Renderer';
+import { QUALITIES, RESOLUTIONS } from '../engine/Quality';
 import { t } from '../i18n';
 import { SaveManager } from '../persistence/SaveManager';
 import { COL, UI, inRect } from './UI';
 
 /** DIFFICULTY belongs to the journey, so it is only listed during play. */
-const ROWS = ['LANGUAGE', 'BGM VOLUME', 'SFX VOLUME', 'SOUND', 'RENDER SCALE', 'EFFECTS', 'CRT FILTER', 'MINIMAP', 'DIFFICULTY', 'BACK'];
+const ROWS = ['LANGUAGE', 'BGM VOLUME', 'SFX VOLUME', 'SOUND', 'RENDER SCALE', 'QUALITY', 'CRT FILTER', 'MINIMAP', 'DIFFICULTY', 'BACK'];
 const RES = RESOLUTIONS;
+const QUALITY_NAME = { performance: 'PERFORMANCE', balanced: 'BALANCED', high: 'HIGH', ultra: 'ULTRA' } as const;
 const rowY = (i: number) => 116 + i * 28;
 /** Volume gauges: x range of the bar, so a click there sets the level. */
 const GAUGE = { x: 330, w: 150 };
@@ -97,7 +98,8 @@ export class OptionsMenu implements Scene {
         st.resolution = RES[(RES.indexOf(st.resolution) + d + RES.length) % RES.length];
         break;
       case 5:
-        st.effects = st.effects === 'high' ? 'low' : 'high';
+        st.quality = QUALITIES[(QUALITIES.indexOf(st.quality) + d + QUALITIES.length) % QUALITIES.length];
+        st.effects = st.quality === 'performance' ? 'low' : 'high';
         break;
       case 6:
         st.crt = !st.crt;
@@ -121,7 +123,7 @@ export class OptionsMenu implements Scene {
       case 4:
         return st.resolution === 'auto' ? t('AUTO') : `${st.resolution}%`;
       case 5:
-        return t(st.effects === 'high' ? 'HIGH' : 'LOW');
+        return t(QUALITY_NAME[st.quality]);
       case 6:
         return t(st.crt ? 'ON' : 'OFF');
       case 7:

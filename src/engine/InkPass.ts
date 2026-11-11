@@ -10,9 +10,11 @@ export interface Mist {
 
 /**
  * Ink drawing from the scene's depth: a brush line where the depth jumps (the second
- * difference of linear depth, so a sloping ground makes no line) and, on HIGH, a soft
- * dark halo where a surface sits farther than its surroundings (a depth unsharp mask,
- * standing in for ambient occlusion). With a mist, drifting ink wash covers whatever
+ * difference of linear depth, so a sloping ground makes no line); with CREASES, a thinner
+ * line where the surface folds (normals rebuilt from the depth, so no second scene pass);
+ * and with AO_TAPS, a soft dark halo where a surface sits a little farther than its
+ * surroundings (a depth unsharp mask over two or three rings, standing in for ambient
+ * occlusion; taps far in front are left out, so a body does not smudge a distant wall). With a mist, drifting ink wash covers whatever
  * stands on ground not yet seen (its x, z found from the depth). Runs on the linear
  * colour, before bloom and tone mapping.
  */
@@ -34,8 +36,11 @@ export class InkPass extends Pass {
     /** Line width in pixels. */
     uWidth: { value: 1 },
     uStrength: { value: 0.82 },
-    uAO: { value: 0 },
+    uAO: { value: 0.4 },
     uAOScale: { value: 1.2 },
+    /** Strength of the crease lines, and the view-space size of the screen at distance 1 (half extents). */
+    uCrease: { value: 0.5 },
+    uViewScale: { value: new THREE.Vector2(1, 1) },
     uMist: { value: 0 },
     tMist: { value: null as THREE.Texture | null },
     uMistSize: { value: new THREE.Vector2(1, 1) },
@@ -52,13 +57,15 @@ export class InkPass extends Pass {
     this.needsSwap = true;
     this.material = new THREE.ShaderMaterial({
       uniforms: this.uniforms,
+      defines: { AO_TAPS: 8 } as Record<string, string | number>,
       vertexShader: /* glsl */ `
         varying vec2 vUv;
         void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
       fragmentShader: /* glsl */ `
         uniform sampler2D tDiffuse, tDepth, tMist;
         uniform vec2 uRes, uFadeRange, uMistSize;
-        uniform float uNear, uFar, uOrtho, uEdge, uWidth, uStrength, uAO, uAOScale, uMist, uMistTop, uTime;
+        uniform float uNear, uFar, uOrtho, uEdge, uWidth, uStrength, uAO, uAOScale, uCrease, uMist, uMistTop, uTime;
+        uniform vec2 uViewScale;
         uniform mat4 uInvViewProj;
         varying vec2 vUv;
         float hash(vec2 p) {
@@ -78,6 +85,16 @@ export class InkPass extends Pass {
           if (d >= 0.99999) return uFar;
           return uOrtho > 0.5 ? d * (uFar - uNear) + uNear : (uNear * uFar) / (uFar - (uFar - uNear) * d);
         }
+        // view-space position of the surface seen at uv, d metres from the camera plane
+        vec3 viewPos(vec2 uv, float d) {
+          vec2 n = (uv * 2.0 - 1.0) * uViewScale;
+          return uOrtho > 0.5 ? vec3(n, -d) : vec3(n * d, -d);
+        }
+        // how much nearer than dc a tap is, as occlusion: none when level or behind, fading out when far in front
+        float occlude(float dc, vec2 uv, float range) {
+          float k = (dc - dist(uv)) / range;
+          return clamp(k, 0.0, 1.0) * (1.0 - smoothstep(2.5, 6.0, k));
+        }
         void main() {
           vec3 c = texture2D(tDiffuse, vUv).rgb;
           vec2 px = uWidth / uRes;
@@ -89,15 +106,34 @@ export class InkPass extends Pass {
           float lap = abs(dl + dr - 2.0 * dc) + abs(du + dd - 2.0 * dc) + 0.5 * (abs(d1 + d2 - 2.0 * dc) + abs(d3 + d4 - 2.0 * dc));
           float unit = uOrtho > 0.5 ? 1.0 : dc;
           float line = smoothstep(1.0, 2.2, lap / (uEdge * unit));
-          line *= 1.0 - smoothstep(uFadeRange.x, uFadeRange.y, dc);
-          c = mix(c, vec3(0.03, 0.02, 0.018), line * uStrength);
-          if (uAO > 0.0) {
+          float fade = 1.0 - smoothstep(uFadeRange.x, uFadeRange.y, dc);
+          #ifdef CREASES
+            // the surface's normal from the samples behind and from those ahead: they part where it folds
+            vec3 pc = viewPos(vUv, dc);
+            vec3 n1 = cross(pc - viewPos(vUv - vec2(px.x, 0.0), dl), pc - viewPos(vUv - vec2(0.0, px.y), dd));
+            vec3 n2 = cross(viewPos(vUv + vec2(px.x, 0.0), dr) - pc, viewPos(vUv + vec2(0.0, px.y), du) - pc);
+            float fold = 1.0 - dot(normalize(n1), normalize(n2));
+            // from about 50 degrees, full at 80; not where a depth jump already drew its line, nor in the open sky
+            float crease = smoothstep(0.36, 0.82, fold) * (1.0 - line) * step(dc, uFar * 0.98);
+            line = max(line, crease * uCrease);
+          #endif
+          c = mix(c, vec3(0.03, 0.02, 0.018), line * fade * uStrength);
+          #if AO_TAPS > 0
+          {
             vec2 r = px * 5.0;
-            float avg = (dist(vUv + vec2(r.x, 0.0)) + dist(vUv - vec2(r.x, 0.0)) + dist(vUv + vec2(0.0, r.y)) + dist(vUv - vec2(0.0, r.y))
-              + dist(vUv + r * 0.7) + dist(vUv - r * 0.7) + dist(vUv + vec2(r.x, -r.y) * 0.7) + dist(vUv + vec2(-r.x, r.y) * 0.7)) * 0.125;
-            float occ = smoothstep(0.0, 1.0, (dc - avg) / (uAOScale * unit));
-            c *= 1.0 - occ * uAO;
+            float range = uAOScale * unit;
+            float occ = occlude(dc, vUv + vec2(r.x, 0.0), range) + occlude(dc, vUv - vec2(r.x, 0.0), range) + occlude(dc, vUv + vec2(0.0, r.y), range) + occlude(dc, vUv - vec2(0.0, r.y), range)
+              + occlude(dc, vUv + r * 0.7, range) + occlude(dc, vUv - r * 0.7, range) + occlude(dc, vUv + vec2(r.x, -r.y) * 0.7, range) + occlude(dc, vUv + vec2(-r.x, r.y) * 0.7, range);
+            #if AO_TAPS > 8
+              // a second, tighter ring and a wider one: contact darkening and a broader halo
+              vec2 r2 = r * 0.4, r3 = r * 1.8;
+              occ += occlude(dc, vUv + vec2(r2.x, 0.0), range) + occlude(dc, vUv - vec2(r2.x, 0.0), range) + occlude(dc, vUv + vec2(0.0, r2.y), range) + occlude(dc, vUv - vec2(0.0, r2.y), range)
+                + occlude(dc, vUv + r3 * 0.7, range) + occlude(dc, vUv - r3 * 0.7, range) + occlude(dc, vUv + vec2(r3.x, -r3.y) * 0.7, range) + occlude(dc, vUv + vec2(-r3.x, r3.y) * 0.7, range);
+              occ *= 0.5;
+            #endif
+            c *= 1.0 - smoothstep(0.0, 1.0, occ * 0.25) * uAO;
           }
+          #endif
           if (uMist > 0.5) {
             // a ground fog bank over unseen ground, up to uMistTop: whatever the view ray reaches
             // through it is lost in it, and taller things rise out of its top
@@ -151,6 +187,23 @@ export class InkPass extends Pass {
     u.uEdge.value = ortho ? 0.3 : 0.035;
     u.uAOScale.value = ortho ? 1.4 : 0.09;
     u.uFadeRange.value.set(ortho ? 1e5 : 28, ortho ? 2e5 : 70);
+    if (ortho) {
+      const o = camera as THREE.OrthographicCamera;
+      u.uViewScale.value.set((o.right - o.left) / (2 * o.zoom), (o.top - o.bottom) / (2 * o.zoom));
+    } else {
+      const t = Math.tan((cam.fov * Math.PI) / 360);
+      u.uViewScale.value.set(t * cam.aspect, t);
+    }
+  }
+
+  /** Per quality profile: halo taps (0, 8 or 16) and whether folds get lines. Recompiles only on a change. */
+  setQuality(aoTaps: number, creases: boolean): void {
+    const d = this.material.defines as Record<string, string | number>;
+    if (d.AO_TAPS === aoTaps && 'CREASES' in d === creases) return;
+    d.AO_TAPS = aoTaps;
+    if (creases) d.CREASES = '';
+    else delete d.CREASES;
+    this.material.needsUpdate = true;
   }
 
   /** Per frame: the fog of war to cover with mist, if any. */

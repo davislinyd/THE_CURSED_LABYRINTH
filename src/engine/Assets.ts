@@ -122,6 +122,11 @@ export class Assets {
     return gltf.scene.clone(true);
   }
 
+  /** After a lost WebGL context: prefiltered environments are render targets, their contents gone. */
+  forgetEnvironments(): void {
+    for (const k of [...this.cache.keys()]) if (k.startsWith('env:')) this.cache.delete(k);
+  }
+
   /** Prefiltered environment map from an HDRI, for reflections. */
   environment(id: string, renderer: THREE.WebGLRenderer): Promise<THREE.Texture> {
     return this.once(`env:${id}`, async () => {

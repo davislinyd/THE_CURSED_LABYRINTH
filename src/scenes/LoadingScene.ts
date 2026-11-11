@@ -2,7 +2,6 @@ import type { Game } from '../core/Game';
 import { Scene } from '../core/SceneManager';
 import { t } from '../i18n';
 import { COL, UI } from '../ui/UI';
-import { TitleScene } from './TitleScene';
 
 /** Boot screen: reads the asset manifest and decodes the sound banks. */
 export class LoadingScene implements Scene {
@@ -20,7 +19,7 @@ export class LoadingScene implements Scene {
     try {
       await g.assets.init();
       await g.audio.load(g.assets, (done, total) => (this.progress = done / total));
-      g.scenes.change(new TitleScene(g));
+      g.booted();
     } catch (e) {
       this.error = String(e instanceof Error ? e.message : e);
       console.error(e);

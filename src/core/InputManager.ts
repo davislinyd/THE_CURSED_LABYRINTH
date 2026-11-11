@@ -301,6 +301,12 @@ export class InputManager {
     }
   }
 
+  /** Scripted commands for this tick (benchmark runs), on top of what the devices gave. */
+  inject(move: Vec2, pressed: readonly Action[]): void {
+    this.stick = { ...move };
+    for (const a of pressed) this.pressedNow.add(a);
+  }
+
   pressed(a: Action): boolean {
     return this.pressedNow.has(a);
   }
