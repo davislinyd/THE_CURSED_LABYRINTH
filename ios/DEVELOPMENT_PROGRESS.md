@@ -1,6 +1,6 @@
 # iOS cinematic combat 進度
 
-- 分支：feature/ios-cinematic-combat-upgrade；起點 3cdb464。本輪尚未提交。
+- 分支：feature/ios-cinematic-combat-upgrade；起點 3cdb464。2026-11-12 提交（a2242d7）並以 --no-ff 合併回 main；尚未 push。
 - 原有網頁及 iOS 未提交變更均保留；非 iOS 初始 SHA-256 清單：build/cinematic/non-ios-before.json。
 - Phase 1：iPhone 15 Pro／iOS 27.0.1／USB paired／Developer Mode enabled。正式 Journey 已唯讀複製至 build/cinematic/player-before。原始 11 組核心測試及三難度整章通過。
 - Phase 2：BossRhythm 集中追擊、轉向、恢復參數；突進斬、二段連擊、65%／30% 階段。保留既有動畫命中 sample；攻擊鎖定方向。第一輪 11 組核心回歸通過。

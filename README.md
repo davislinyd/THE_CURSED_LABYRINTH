@@ -145,7 +145,7 @@ tests/          Vitest
 - 首次上傳 App Store Connect，App 名稱「幽燈魔境」、App ID `6832804838`。build `12` 包含 UserDefaults 隱私 API 用途及加密宣告，遊戲程式沿用 build `10`。
 - Release archive 與上傳成功，265 份封裝素材雜湊核對通過；TestFlight 頁面已確認 build `12`，Apple 狀態為 Processing。未建立測試群組或邀請測試者，詳見 [iOS 驗證紀錄](ios/VALIDATION.md)。
 
-### 2026-11-11～12　iOS Boss 節奏與半身恐怖巨像（`1.0` build `24`，`feature/ios-cinematic-combat-upgrade` 分支）
+### 2026-11-11～12　iOS Boss 節奏與半身恐怖巨像（`1.0` build `24`，`feature/ios-cinematic-combat-upgrade` 分支，合併回 `main`）
 
 - Boss 節奏（`BossRhythm`）：突進斬、二段連擊，65%／30% 血量切換階段；跨門檻時立即標記，不打斷當前招式。張力導演（`TensionDirector`）控制環境聲、區域補光與距離霧；畫質分 Performance／Balanced／High，高溫或低電量強制 Performance。
 - Boss 重製為約 55.8 m 的半身腐神（每型態約 16.5 萬三角面），以 Blender 雕塑，原始檔與腳本放在 `ios/ArtSource/`。巨手以雙節肢體解算追隨實際接觸點；掌背封印在前搖結束後才能斬擊（`ColossusPose`）。場地改為開放熔岩祭壇，鏡頭改為仰視。
